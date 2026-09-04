@@ -4,6 +4,5 @@ Lelaku memungkinkan pengguna mempublikasikan rencana perjalanan dan menemukan te
 Kelompok Finished or not, submit! 
 
 Ketua Kelompok: 
-Anggota 1: 
-Anggota 2: 
-Anggota 3: 
+Anggota 1: BAYU RAHMAT KURNIA - 24/533736/TK/59139
+Anggota 2:
