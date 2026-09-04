@@ -3,6 +3,6 @@ Lelaku memungkinkan pengguna mempublikasikan rencana perjalanan dan menemukan te
 
 Kelompok Finished or not, submit! 
 
-Ketua Kelompok: 
-Anggota 1: BAYU RAHMAT KURNIA - 24/533736/TK/59139
-Anggota 2:
+1. Ketua Kelompok: Ahmad Maulana Ibrahim-24/539655/TK/59853
+2. Anggota 1: BAYU RAHMAT KURNIA - 24/533736/TK/59139
+3. Anggota 2:  
