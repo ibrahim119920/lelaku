@@ -3,7 +3,7 @@ Lelaku memungkinkan pengguna mempublikasikan rencana perjalanan dan menemukan te
 
 Kelompok Finished or not, submit! 
 
-Ketua Kelompok: Ahmad Maulana Ibrahim-24/539655/TK/59853
-Anggota 1: 
-Anggota 2: 
+1. Ketua Kelompok: Ahmad Maulana Ibrahim-24/539655/TK/59853
+2. Anggota 1: 
+3. Anggota 2: 
 
