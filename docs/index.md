@@ -10,7 +10,7 @@
 2. Bayu Rahmat Kurnia — 24/533736/TK/59139
 3. Sukmawati — 24/545512/TK/60686
 
-**Project Senior Project TI**
+### Project Senior Project TI
 
 **Instansi:**  
 Departemen Teknologi Elektro dan Teknologi Informasi  
@@ -22,7 +22,7 @@ Fakultas Teknik, Universitas Gadjah Mada
 
 ## Nama Produk
 
-**Lelaku**
+Lelaku
 
 ---
 
