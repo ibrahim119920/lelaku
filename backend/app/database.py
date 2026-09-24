@@ -8,7 +8,11 @@ from sqlalchemy.engine import URL, make_url
 from sqlalchemy.exc import ArgumentError
 
 
-PROJECT_ROOT = Path(__file__).resolve().parents[2]
+BACKEND_ROOT = Path(__file__).resolve().parents[1]
+PROJECT_ROOT = BACKEND_ROOT.parent
+# Prefer service-local configuration while keeping the old root .env as a
+# backwards-compatible fallback during the repository layout transition.
+load_dotenv(BACKEND_ROOT / ".env")
 load_dotenv(PROJECT_ROOT / ".env")
 
 
@@ -16,8 +20,8 @@ class DatabaseConfigurationError(RuntimeError):
     """Raised when the PostgreSQL connection string is missing or invalid."""
 
 
-def _get_postgres_url() -> URL:
-    raw_url = os.getenv("DATABASE_URL", "").strip()
+def _get_postgres_url(raw_url: str | None = None) -> URL:
+    raw_url = (raw_url if raw_url is not None else os.getenv("DATABASE_URL", "")).strip()
     if not raw_url:
         raise DatabaseConfigurationError(
             "DATABASE_URL belum dikonfigurasi di environment backend."
@@ -35,8 +39,33 @@ def _get_postgres_url() -> URL:
             "DATABASE_URL harus menggunakan PostgreSQL."
         )
 
+    if not url.host or not url.database:
+        raise DatabaseConfigurationError(
+            "DATABASE_URL harus mencantumkan hostname dan nama database."
+        )
+
     query = dict(url.query)
-    query.setdefault("sslmode", "require")
+    app_env = os.getenv("APP_ENV", "production").strip().lower()
+    is_development = app_env in {"dev", "development"}
+    sslmode = str(query.get("sslmode", "")).strip().lower()
+    if not sslmode:
+        sslmode = "require" if is_development else "verify-full"
+
+    if not is_development and sslmode != "verify-full":
+        raise DatabaseConfigurationError(
+            "Environment staging/production mewajibkan sslmode=verify-full."
+        )
+
+    local_hosts = {"localhost", "127.0.0.1", "::1"}
+    host = url.host.strip("[]").lower()
+    if sslmode in {"disable", "allow", "prefer"} and not (
+        is_development and host in local_hosts
+    ):
+        raise DatabaseConfigurationError(
+            "Mode TLS yang dapat menurunkan keamanan hanya boleh untuk PostgreSQL lokal development."
+        )
+
+    query["sslmode"] = sslmode
 
     return url.set(drivername="postgresql+psycopg", query=query)
 

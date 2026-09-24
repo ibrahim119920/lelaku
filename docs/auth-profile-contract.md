@@ -57,11 +57,12 @@ yang dapat dibaca JavaScript. Logout membatalkan session di backend dan
 menghapus cookie dengan atribut yang sama.
 
 Browser memanggil FastAPI langsung. CORS hanya mengizinkan origin persis dari
-`NEXT_PUBLIC_APP_URL` dan memakai `credentials: include`; wildcard origin tidak
-digunakan. Cookie tidak menetapkan `Domain`, sehingga bersifat host-only.
-`SameSite=Lax`; `Secure` aktif otomatis ketika `APP_ENV=production` dan hanya
-nonaktif pada development HTTP lokal. TTL default tujuh hari dan dapat diatur
-melalui `SESSION_TTL_SECONDS` (maksimum 30 hari).
+`FRONTEND_ORIGIN` pada konfigurasi backend dan memakai `credentials: include`;
+wildcard origin tidak digunakan. Cookie tidak menetapkan `Domain`, sehingga bersifat host-only.
+`SameSite=Lax`; `Secure` aktif untuk semua nilai `APP_ENV` selain `dev` atau
+`development`; jika `APP_ENV` tidak diset, cookie memakai `Secure`. TTL default
+tujuh hari dan dapat diatur melalui
+`SESSION_TTL_SECONDS` (maksimum 30 hari).
 
 Pada deployment, Next.js server-side auth perlu menerima cookie yang sama.
 Karena itu frontend dan backend harus berbagi host cookie, misalnya dengan
@@ -137,7 +138,8 @@ Request hanya mengizinkan field berikut:
 `email`, `password_hash`, `identity_status`, rating, dan agregat perjalanan
 tidak boleh diubah melalui endpoint ini. Response `200` mengembalikan DTO
 profile terbaru. Tanpa session, response `401`; input tidak valid memakai
-`422`.
+`422`. Nomor telepon menerima 7–15 digit dengan tanda `+` opsional dan pemisah
+umum (spasi, titik, tanda kurung, atau strip); huruf dan format lain ditolak.
 
 ## Bentuk error minimum
 
@@ -158,7 +160,14 @@ ke pengguna dan tidak boleh berisi password, hash, session ID, atau detail SQL.
 
 ## Status implementasi
 
-Register dan login FastAPI mengikuti kontrak di atas. Logout, pemeriksaan
-session (`/auth/me`), proteksi endpoint, serta GET/PATCH profile masih menunggu
-tahap implementasi berikutnya. Frontend di branch LL-05 memanggil API melalui
-`NEXT_PUBLIC_API_BASE_URL`; server component memakai `BACKEND_API_URL`.
+Register, login, logout, pemeriksaan session (`/auth/me`), serta GET/PATCH
+profile telah mengikuti kontrak di atas. Backend menghash token cookie sebelum
+mencari session, menolak session kedaluwarsa/dicabut, dan mengambil target
+profile hanya dari session aktif. Setiap page di route group `(main)` memeriksa
+`/auth/me` di server saat render dan mengarahkan pengguna tanpa session ke
+`/login`; pemeriksaan tidak hanya bergantung pada layout yang dapat digunakan
+ulang saat navigasi. Kegagalan koneksi/non-401 dari backend menampilkan kondisi
+layanan tidak tersedia dengan opsi coba lagi, bukan dianggap sebagai logout.
+Frontend di branch LL-05 memanggil API melalui `NEXT_PUBLIC_API_BASE_URL`; server
+component memakai `BACKEND_API_URL` dan hanya meneruskan cookie
+`lelaku_session` ke backend.

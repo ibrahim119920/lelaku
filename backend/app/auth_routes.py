@@ -3,12 +3,13 @@ from hashlib import sha256
 import os
 import secrets
 
-from fastapi import APIRouter, Depends, Response
+from fastapi import APIRouter, Depends, Request, Response
 from pwdlib import PasswordHash
 from sqlalchemy import func, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
+from backend.app.auth_dependencies import SESSION_COOKIE_NAME, get_current_user
 from backend.app.dependencies import get_database_session
 from backend.app.errors import ApiError
 from backend.app.models import User, UserSession
@@ -16,7 +17,6 @@ from backend.app.schemas import LoginRequest, RegisterRequest, UserDataEnvelope
 
 
 router = APIRouter(prefix="/auth", tags=["auth"])
-SESSION_COOKIE_NAME = "lelaku_session"
 DEFAULT_SESSION_TTL_SECONDS = 7 * 24 * 60 * 60
 MAX_SESSION_TTL_SECONDS = 30 * 24 * 60 * 60
 
@@ -37,9 +37,9 @@ def _session_ttl_seconds() -> int:
 
 
 def _secure_cookie() -> bool:
-    return os.getenv("APP_ENV", "development").strip().lower() in {
-        "prod",
-        "production",
+    return os.getenv("APP_ENV", "production").strip().lower() not in {
+        "dev",
+        "development",
     }
 
 
@@ -147,4 +147,40 @@ def login(
         samesite="lax",
         path="/",
     )
+    return UserDataEnvelope(data=user)
+
+
+@router.post("/logout", status_code=204)
+def logout(
+    request: Request,
+    response: Response,
+    session: Session = Depends(get_database_session),
+) -> Response:
+    response.headers["Cache-Control"] = "no-store"
+    raw_token = request.cookies.get(SESSION_COOKIE_NAME)
+
+    if raw_token:
+        token_hash = sha256(raw_token.encode("utf-8")).hexdigest()
+        user_session = session.get(UserSession, token_hash)
+        if user_session is not None and user_session.revoked_at is None:
+            user_session.revoked_at = datetime.now(timezone.utc)
+            session.commit()
+
+    response.delete_cookie(
+        key=SESSION_COOKIE_NAME,
+        path="/",
+        httponly=True,
+        secure=_secure_cookie(),
+        samesite="lax",
+    )
+    response.status_code = 204
+    return response
+
+
+@router.get("/me", response_model=UserDataEnvelope)
+def current_user(
+    response: Response,
+    user: User = Depends(get_current_user),
+) -> UserDataEnvelope:
+    response.headers["Cache-Control"] = "no-store"
     return UserDataEnvelope(data=user)

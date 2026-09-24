@@ -12,6 +12,7 @@ from backend.app.database import (
     check_database_connection,
 )
 from backend.app.errors import ApiError
+from backend.app.profile_routes import router as profile_router
 
 
 app = FastAPI(
@@ -20,7 +21,10 @@ app = FastAPI(
     version="0.1.0",
 )
 
-frontend_origin = os.getenv("NEXT_PUBLIC_APP_URL", "http://localhost:3000").strip()
+frontend_origin = os.getenv(
+    "FRONTEND_ORIGIN",
+    os.getenv("NEXT_PUBLIC_APP_URL", "http://localhost:3000"),
+).strip()
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[frontend_origin.rstrip("/")],
@@ -30,6 +34,7 @@ app.add_middleware(
 )
 
 app.include_router(auth_router)
+app.include_router(profile_router)
 
 
 @app.exception_handler(ApiError)
