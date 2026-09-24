@@ -22,6 +22,7 @@ body {
   background: var(--background);
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
+  overflow-x: hidden;
 }
 
 a {
@@ -38,6 +39,20 @@ textarea {
 
 button {
   cursor: pointer;
+}
+
+button:disabled {
+  cursor: wait;
+  opacity: 0.65;
+}
+
+a:focus-visible,
+button:focus-visible,
+input:focus-visible,
+textarea:focus-visible,
+select:focus-visible {
+  outline: 3px solid #f59e0b;
+  outline-offset: 2px;
 }
 
 .page-shell {
@@ -112,6 +127,7 @@ button.button {
   color: white;
   display: inline-block;
   font-weight: 700;
+  min-height: 44px;
   padding: 0.75rem 1rem;
 }
 
@@ -145,7 +161,103 @@ button.button {
 .field select {
   border: 1px solid var(--border);
   border-radius: 0.6rem;
+  min-width: 0;
+  min-height: 44px;
   padding: 0.75rem;
+}
+
+.field input[aria-invalid="true"],
+.field textarea[aria-invalid="true"],
+.field select[aria-invalid="true"] {
+  border-color: #b42318;
+}
+
+.field-error {
+  color: #b42318;
+  font-size: 0.9rem;
+  margin: 0;
+}
+
+.form-status {
+  border-radius: 0.6rem;
+  margin: 0;
+  padding: 0.75rem 1rem;
+}
+
+.form-status.error {
+  background: #fef3f2;
+  color: #8f1d14;
+}
+
+.form-status.success {
+  background: #ecfdf3;
+  color: #176b43;
+}
+
+.profile-summary {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.profile-photo {
+  align-items: center;
+  background: #ccfbf1;
+  border-radius: 50%;
+  color: var(--primary-dark);
+  display: flex;
+  flex: 0 0 96px;
+  font-size: 2rem;
+  font-weight: 800;
+  height: 96px;
+  justify-content: center;
+  overflow: hidden;
+  width: 96px;
+}
+
+.profile-photo img {
+  height: 100%;
+  object-fit: cover;
+  width: 100%;
+}
+
+.profile-details {
+  display: grid;
+  gap: 0.75rem;
+  margin: 0;
+}
+
+.profile-details div {
+  min-width: min(100%, 320px);
+}
+
+.profile-details dt {
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+.profile-details dd {
+  margin: 0.15rem 0 0;
+  overflow-wrap: anywhere;
+}
+
+.status-badge {
+  border-radius: 999px;
+  display: inline-block;
+  font-size: 0.9rem;
+  font-weight: 700;
+  padding: 0.35rem 0.65rem;
+}
+
+.status-badge.verified {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.status-badge.unverified {
+  background: #fef3c7;
+  color: #92400e;
 }
 
 .auth-page {
@@ -162,9 +274,32 @@ button.button {
 }
 
 @media (max-width: 640px) {
+  .page-shell {
+    padding-left: 1rem;
+    padding-right: 1rem;
+  }
+
+  .auth-page {
+    align-items: start;
+    padding: 1rem;
+  }
+
   .site-header {
     align-items: flex-start;
     flex-direction: column;
     gap: 0.75rem;
+  }
+
+  .site-nav {
+    gap: 0.75rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
   }
 }

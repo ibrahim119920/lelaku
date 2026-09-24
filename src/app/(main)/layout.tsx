@@ -1,7 +1,11 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
 
-export default function MainLayout({ children }: { children: ReactNode }) {
+import { requireCurrentUser } from "@/lib/server/auth";
+
+export default async function MainLayout({ children }: { children: ReactNode }) {
+  await requireCurrentUser();
+
   return (
     <>
       <header className="site-header">
