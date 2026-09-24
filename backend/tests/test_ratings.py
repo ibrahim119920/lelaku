@@ -1,6 +1,6 @@
 import uuid
 
-from tests.conftest import auth, make_trip_with_passenger, make_user
+from backend.tests.conftest import auth, make_trip_with_passenger, make_user
 
 
 async def _complete(client, trip_id: str, driver: uuid.UUID):
