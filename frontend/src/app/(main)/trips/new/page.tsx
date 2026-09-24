@@ -1,6 +1,10 @@
 import Link from "next/link";
 
-export default function NewTripPage() {
+import { requireCurrentUser } from "@/lib/server/auth";
+
+export default async function NewTripPage() {
+  await requireCurrentUser();
+
   return (
     <main className="page-shell">
       <section className="card">

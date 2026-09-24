@@ -1,21 +1,20 @@
+import os
 from functools import lru_cache
+from pathlib import Path
 from zoneinfo import ZoneInfo
 
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
+BACKEND_ROOT = Path(__file__).resolve().parents[2]
+
+
 class Settings(BaseSettings):
-    model_config = SettingsConfigDict(env_file=".env", extra="ignore")
-
-    database_url: str = "postgresql+asyncpg://postgres:postgres@localhost:5432/lelaku"
-    db_disable_statement_cache: bool = False
-
-    jwt_secret: str = "change-me-in-development-at-least-32-bytes"
-    jwt_algorithm: str = "HS256"
-    access_token_cookie_name: str = "access_token"
+    model_config = SettingsConfigDict(env_file=BACKEND_ROOT / ".env", extra="ignore")
 
     app_timezone: str = "Asia/Jakarta"
-    cors_origins: str = "http://localhost:3000"
+    cors_origins: str | None = None
+    frontend_origin: str | None = None
 
     @property
     def tz(self) -> ZoneInfo:
@@ -23,7 +22,8 @@ class Settings(BaseSettings):
 
     @property
     def cors_origin_list(self) -> list[str]:
-        return [origin.strip() for origin in self.cors_origins.split(",") if origin.strip()]
+        raw_origins = self.cors_origins or self.frontend_origin or "http://localhost:3000"
+        return [origin.strip().rstrip("/") for origin in raw_origins.split(",") if origin.strip()]
 
 
 @lru_cache

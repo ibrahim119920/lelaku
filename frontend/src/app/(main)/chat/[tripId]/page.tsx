@@ -1,6 +1,10 @@
 import Link from "next/link";
 
-export default function ChatPage() {
+import { requireCurrentUser } from "@/lib/server/auth";
+
+export default async function ChatPage() {
+  await requireCurrentUser();
+
   return (
     <main className="page-shell">
       <section className="card stack">

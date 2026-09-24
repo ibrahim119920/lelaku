@@ -4,7 +4,7 @@ from typing import Literal
 
 from pydantic import AwareDatetime, BaseModel, ConfigDict, Field
 
-from app.trip.models import Trip, TripStatus
+from backend.app.trip.models import Trip, TripStatus
 
 
 class LatLng(BaseModel):

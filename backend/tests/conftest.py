@@ -1,9 +1,4 @@
-"""Test integrasi terhadap Postgres sungguhan.
-
-Butuh database kosong khusus test, diatur lewat env TEST_DATABASE_URL, mis.:
-    TEST_DATABASE_URL=postgresql+asyncpg://postgres:postgres@localhost:55432/lelaku_test
-Semua tabel di-drop dan dibuat ulang di awal sesi test. JANGAN arahkan ke database development.
-"""
+"""Trip/chat integration tests use only an explicitly local, disposable Postgres database."""
 
 import os
 import uuid
@@ -11,20 +6,49 @@ from datetime import UTC, datetime, time, timedelta
 from zoneinfo import ZoneInfo
 
 import pytest
+from fastapi import Header, HTTPException
+from sqlalchemy.engine import make_url
 
-os.environ["DATABASE_URL"] = os.environ.get(
-    "TEST_DATABASE_URL", "postgresql+asyncpg://postgres:postgres@localhost:55432/lelaku_test"
+
+_DEFAULT_TEST_DATABASE_URL = (
+    "postgresql+psycopg://postgres:postgres@127.0.0.1:55432/"
+    "lelaku_test?sslmode=disable"
 )
+_test_url = make_url(os.environ.get("TEST_DATABASE_URL", _DEFAULT_TEST_DATABASE_URL))
+if (
+    _test_url.host not in {"localhost", "127.0.0.1", "::1"}
+    or not _test_url.database
+    or "test" not in _test_url.database.lower()
+    or _test_url.drivername not in {"postgres", "postgresql", "postgresql+psycopg"}
+):
+    raise RuntimeError(
+        "Trip/chat tests require TEST_DATABASE_URL to point to a local database "
+        "whose name contains 'test'."
+    )
 
-import jwt  # noqa: E402
+_test_query = dict(_test_url.query)
+_test_query.setdefault("sslmode", "disable")
+os.environ["APP_ENV"] = "development"
+os.environ["DATABASE_URL"] = _test_url.set(
+    drivername="postgresql+psycopg",
+    query=_test_query,
+).render_as_string(hide_password=False)
+
 from httpx import ASGITransport, AsyncClient  # noqa: E402
 from sqlalchemy import text  # noqa: E402
 
-import app.models  # noqa: E402, F401
-from app.auth.models import DriverProfile, User, Vehicle  # noqa: E402
-from app.core.config import get_settings  # noqa: E402
-from app.core.database import Base, SessionLocal, engine  # noqa: E402
-from app.main import app  # noqa: E402
+import backend.app.models  # noqa: E402, F401
+from backend.app.core.database import (  # noqa: E402
+    Base,
+    get_async_engine,
+    get_async_sessionmaker,
+)
+from backend.app.core.security import get_current_user_id  # noqa: E402
+from backend.app.main import app  # noqa: E402
+from backend.app.models import DriverProfile, User, Vehicle  # noqa: E402
+
+engine = get_async_engine()
+SessionLocal = get_async_sessionmaker()
 
 
 @pytest.fixture(scope="session", autouse=True)
@@ -45,21 +69,39 @@ async def _clean_tables():
         await conn.execute(text(f"TRUNCATE {tables} CASCADE"))
 
 
+@pytest.fixture(autouse=True)
+def _test_identity_dependency():
+    def test_identity(x_test_user: str | None = Header(default=None)) -> uuid.UUID:
+        if not x_test_user:
+            raise HTTPException(status_code=401, detail="Test identity required.")
+        try:
+            return uuid.UUID(x_test_user)
+        except ValueError as error:
+            raise HTTPException(status_code=401, detail="Invalid test identity.") from error
+
+    app.dependency_overrides[get_current_user_id] = test_identity
+    yield
+    app.dependency_overrides.pop(get_current_user_id, None)
+
+
 @pytest.fixture
 async def client():
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as c:
         yield c
 
 
-def auth(user_id: uuid.UUID) -> dict[str, str]:
-    settings = get_settings()
-    token = jwt.encode({"sub": str(user_id)}, settings.jwt_secret, algorithm=settings.jwt_algorithm)
-    return {"Authorization": f"Bearer {token}"}
+def auth(user_id: uuid.UUID | str) -> dict[str, str]:
+    return {"X-Test-User": str(user_id)}
 
 
-async def make_user(name: str = "User", *, driver_status: str | None = None) -> uuid.UUID:
+async def make_user(name: str = "User", *, driver_status: str | None = None) -> str:
     async with SessionLocal() as session:
-        user = User(name=name, email=f"{uuid.uuid4().hex}@test.id", password_hash="x")
+        user = User(
+            name=name,
+            email=f"{uuid.uuid4().hex}@test.id",
+            phone="+628123456789",
+            password_hash="test-only",
+        )
         session.add(user)
         await session.flush()
         if driver_status is not None:
@@ -68,7 +110,7 @@ async def make_user(name: str = "User", *, driver_status: str | None = None) -> 
         return user.user_id
 
 
-async def make_vehicle(driver_id: uuid.UUID, capacity: int = 4) -> uuid.UUID:
+async def make_vehicle(driver_id: uuid.UUID | str, capacity: int = 4) -> uuid.UUID:
     async with SessionLocal() as session:
         vehicle = Vehicle(
             driver_id=driver_id,
@@ -104,7 +146,7 @@ def tomorrow_wib(hour: int, minute: int = 0) -> datetime:
 
 async def make_trip(
     client: AsyncClient,
-    driver_id: uuid.UUID,
+    driver_id: uuid.UUID | str,
     vehicle_id: uuid.UUID,
     *,
     origin=UGM,
@@ -136,7 +178,9 @@ async def make_trip_with_passenger(client: AsyncClient, *, seats: int = 3):
     trip = await make_trip(client, driver, vehicle, seats=seats)
     passenger = await make_user("Passenger")
     req = await client.post(
-        f"/trips/{trip['trip_id']}/requests", json={"pickup": "Gerbang UGM"}, headers=auth(passenger)
+        f"/trips/{trip['trip_id']}/requests",
+        json={"pickup": "Gerbang UGM"},
+        headers=auth(passenger),
     )
     resp = await client.patch(
         f"/trips/{trip['trip_id']}/requests/{req.json()['request_id']}",

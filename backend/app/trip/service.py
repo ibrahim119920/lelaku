@@ -4,11 +4,11 @@ from datetime import UTC, date, datetime, time, timedelta
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.config import get_settings
-from app.core.exceptions import BadRequestError, ConflictError, ForbiddenError, NotFoundError
-from app.trip import matching
-from app.trip import repository as repo
-from app.trip.models import (
+from backend.app.core.config import get_settings
+from backend.app.core.exceptions import BadRequestError, ConflictError, ForbiddenError, NotFoundError
+from backend.app.trip import matching
+from backend.app.trip import repository as repo
+from backend.app.trip.models import (
     Rating,
     RatingRoleContext,
     RideRequest,
@@ -18,7 +18,7 @@ from app.trip.models import (
     TripMemberStatus,
     TripStatus,
 )
-from app.trip.schemas import (
+from backend.app.trip.schemas import (
     DriverInfo,
     JoinedTripOut,
     RatingCreate,

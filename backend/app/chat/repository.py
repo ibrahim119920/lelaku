@@ -4,8 +4,8 @@ from datetime import datetime
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.auth.models import User
-from app.chat.models import Message
+from backend.app.models import User
+from backend.app.chat.models import Message
 
 
 async def list_messages(

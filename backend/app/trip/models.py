@@ -18,7 +18,7 @@ from sqlalchemy import (
 )
 from sqlalchemy.orm import Mapped, mapped_column
 
-from app.core.database import Base
+from backend.app.base import Base, UUIDText
 
 
 class TripStatus(str, enum.Enum):
@@ -42,7 +42,7 @@ class Trip(Base):
 
     trip_id: Mapped[uuid.UUID] = mapped_column(Uuid, primary_key=True, default=uuid.uuid4)
     driver_id: Mapped[uuid.UUID] = mapped_column(
-        Uuid, ForeignKey("users.user_id", ondelete="CASCADE"), index=True
+        UUIDText(), ForeignKey("users.user_id", ondelete="CASCADE"), index=True
     )
     vehicle_id: Mapped[uuid.UUID] = mapped_column(
         Uuid, ForeignKey("vehicles.vehicle_id", ondelete="RESTRICT")
@@ -104,7 +104,7 @@ class RideRequest(Base):
 
     request_id: Mapped[uuid.UUID] = mapped_column(Uuid, primary_key=True, default=uuid.uuid4)
     requester_id: Mapped[uuid.UUID] = mapped_column(
-        Uuid, ForeignKey("users.user_id", ondelete="CASCADE"), index=True
+        UUIDText(), ForeignKey("users.user_id", ondelete="CASCADE"), index=True
     )
     trip_id: Mapped[uuid.UUID] = mapped_column(
         Uuid, ForeignKey("trips.trip_id", ondelete="CASCADE"), index=True
@@ -133,7 +133,7 @@ class TripMember(Base):
     trip_member_id: Mapped[uuid.UUID] = mapped_column(Uuid, primary_key=True, default=uuid.uuid4)
     trip_id: Mapped[uuid.UUID] = mapped_column(Uuid, ForeignKey("trips.trip_id", ondelete="CASCADE"))
     user_id: Mapped[uuid.UUID] = mapped_column(
-        Uuid, ForeignKey("users.user_id", ondelete="CASCADE"), index=True
+        UUIDText(), ForeignKey("users.user_id", ondelete="CASCADE"), index=True
     )
     ride_request_id: Mapped[uuid.UUID] = mapped_column(
         Uuid, ForeignKey("ride_requests.request_id", ondelete="CASCADE"), unique=True
@@ -161,9 +161,11 @@ class Rating(Base):
 
     rating_id: Mapped[uuid.UUID] = mapped_column(Uuid, primary_key=True, default=uuid.uuid4)
     trip_id: Mapped[uuid.UUID] = mapped_column(Uuid, ForeignKey("trips.trip_id", ondelete="CASCADE"))
-    rater_id: Mapped[uuid.UUID] = mapped_column(Uuid, ForeignKey("users.user_id", ondelete="CASCADE"))
+    rater_id: Mapped[uuid.UUID] = mapped_column(
+        UUIDText(), ForeignKey("users.user_id", ondelete="CASCADE")
+    )
     rated_user_id: Mapped[uuid.UUID] = mapped_column(
-        Uuid, ForeignKey("users.user_id", ondelete="CASCADE"), index=True
+        UUIDText(), ForeignKey("users.user_id", ondelete="CASCADE"), index=True
     )
     role_context: Mapped[str] = mapped_column(String(32))
     score: Mapped[int] = mapped_column(Integer)
