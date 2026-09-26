@@ -3,10 +3,10 @@ from datetime import date, time
 
 from fastapi import APIRouter, Query, status
 
-from app.core.deps import CurrentUserId, DbSession
-from app.trip import service
-from app.trip.models import RatingRoleContext, RideRequestStatus, TripStatus
-from app.trip.schemas import (
+from backend.app.core.deps import CurrentUserId, DbSession
+from backend.app.trip import service
+from backend.app.trip.models import RatingRoleContext, RideRequestStatus, TripStatus
+from backend.app.trip.schemas import (
     JoinedTripOut,
     RatingCreate,
     RatingOut,

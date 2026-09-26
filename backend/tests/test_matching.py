@@ -1,6 +1,6 @@
 from datetime import timedelta
 
-from app.trip import matching
+from backend.app.trip import matching
 
 
 def test_haversine_known_distance():

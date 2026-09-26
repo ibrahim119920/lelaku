@@ -1,7 +1,7 @@
 """rating
 
-Revision ID: 0005
-Revises: 0004
+Revision ID: 20260924_0006_ratings
+Revises: 20260924_0005_messages
 Create Date: 2026-09-24 17:15:44.055194
 """
 
@@ -11,8 +11,8 @@ import sqlalchemy as sa
 from alembic import op
 
 
-revision: str = '0005'
-down_revision: str | None = '0004'
+revision: str = '20260924_0006_ratings'
+down_revision: str | None = '20260924_0005_messages'
 branch_labels: str | Sequence[str] | None = None
 depends_on: str | Sequence[str] | None = None
 
@@ -22,8 +22,8 @@ def upgrade() -> None:
     op.create_table('ratings',
     sa.Column('rating_id', sa.Uuid(), nullable=False),
     sa.Column('trip_id', sa.Uuid(), nullable=False),
-    sa.Column('rater_id', sa.Uuid(), nullable=False),
-    sa.Column('rated_user_id', sa.Uuid(), nullable=False),
+    sa.Column('rater_id', sa.Text(), nullable=False),
+    sa.Column('rated_user_id', sa.Text(), nullable=False),
     sa.Column('role_context', sa.String(length=32), nullable=False),
     sa.Column('score', sa.Integer(), nullable=False),
     sa.CheckConstraint("role_context IN ('driver_to_passenger', 'passenger_to_driver')", name=op.f('ck_ratings_role_context_valid')),

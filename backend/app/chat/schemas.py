@@ -3,7 +3,7 @@ from datetime import datetime
 
 from pydantic import BaseModel, Field
 
-from app.chat.models import MESSAGE_MAX_LENGTH
+from backend.app.chat.models import MESSAGE_MAX_LENGTH
 
 
 class MessageCreate(BaseModel):

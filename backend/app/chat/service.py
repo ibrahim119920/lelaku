@@ -3,12 +3,12 @@ from datetime import datetime
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.chat import repository as repo
-from app.chat.models import Message
-from app.chat.schemas import MessageCreate, MessageOut
-from app.core.exceptions import ForbiddenError
-from app.trip import repository as trip_repo
-from app.trip import service as trip_service
+from backend.app.chat import repository as repo
+from backend.app.chat.models import Message
+from backend.app.chat.schemas import MessageCreate, MessageOut
+from backend.app.core.exceptions import ForbiddenError
+from backend.app.trip import repository as trip_repo
+from backend.app.trip import service as trip_service
 
 
 async def _ensure_participant(session: AsyncSession, user_id: uuid.UUID, trip_id: uuid.UUID) -> None:

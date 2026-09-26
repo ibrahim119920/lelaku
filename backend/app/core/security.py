@@ -1,33 +1,14 @@
-"""Identitas user dari access token.
+from typing import Annotated
+from uuid import UUID
 
-TODO(auth): PLACEHOLDER sampai modul auth dari anggota tim lain masuk ke repo.
-Ganti `get_current_user_id` dengan dependency milik modul auth. Endpoint di modul
-trip/chat hanya bergantung pada fungsi ini (mengembalikan user_id), jadi cukup
-diganti di satu tempat.
-"""
+from fastapi import Depends
 
-import uuid
-
-import jwt
-from fastapi import HTTPException, Request, status
-
-from app.core.config import get_settings
+from backend.app.auth_dependencies import get_current_user_async
+from backend.app.models import User
 
 
-def get_current_user_id(request: Request) -> uuid.UUID:
-    settings = get_settings()
-
-    # Utama: JWT di httpOnly cookie. Fallback: header Authorization Bearer (untuk Swagger/testing).
-    token = request.cookies.get(settings.access_token_cookie_name)
-    if token is None:
-        auth_header = request.headers.get("Authorization", "")
-        if auth_header.lower().startswith("bearer "):
-            token = auth_header[7:]
-    if not token:
-        raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Belum login.")
-
-    try:
-        payload = jwt.decode(token, settings.jwt_secret, algorithms=[settings.jwt_algorithm])
-        return uuid.UUID(payload["sub"])
-    except (jwt.PyJWTError, KeyError, ValueError):
-        raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Token tidak valid atau kedaluwarsa.")
+async def get_current_user_id(
+    user: Annotated[User, Depends(get_current_user_async)],
+) -> UUID:
+    """Return the identity validated by LL-05's revocable database session."""
+    return UUID(user.user_id)

@@ -4,8 +4,8 @@ from datetime import datetime
 from sqlalchemy import Select, func, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.auth.models import DriverProfile, User, Vehicle
-from app.trip.models import (
+from backend.app.models import DriverProfile, User, Vehicle
+from backend.app.trip.models import (
     Rating,
     RatingRoleContext,
     RideRequest,
@@ -45,7 +45,7 @@ async def get_vehicle(session: AsyncSession, vehicle_id: uuid.UUID) -> Vehicle |
 
 
 async def get_driver_profile(session: AsyncSession, user_id: uuid.UUID) -> DriverProfile | None:
-    return await session.get(DriverProfile, user_id)
+    return await session.get(DriverProfile, str(user_id))
 
 
 def add_trip(session: AsyncSession, trip: Trip) -> None:
@@ -102,7 +102,7 @@ async def list_joined_trips(session: AsyncSession, user_id: uuid.UUID) -> list[t
 
 
 async def get_user(session: AsyncSession, user_id: uuid.UUID) -> User | None:
-    return await session.get(User, user_id)
+    return await session.get(User, str(user_id))
 
 
 # ---------- Riderequest ----------
@@ -181,7 +181,7 @@ async def cancel_trip_members(session: AsyncSession, trip_id: uuid.UUID) -> None
 
 
 async def get_user_for_update(session: AsyncSession, user_id: uuid.UUID) -> User | None:
-    stmt = select(User).where(User.user_id == user_id).with_for_update()
+    stmt = select(User).where(User.user_id == str(user_id)).with_for_update()
     return (await session.execute(stmt)).scalar_one_or_none()
 
 

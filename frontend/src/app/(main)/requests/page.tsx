@@ -1,4 +1,8 @@
-export default function RequestsPage() {
+import { requireCurrentUser } from "@/lib/server/auth";
+
+export default async function RequestsPage() {
+  await requireCurrentUser();
+
   return (
     <main className="page-shell">
       <section className="card">

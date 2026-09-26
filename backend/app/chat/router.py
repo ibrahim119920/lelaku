@@ -3,9 +3,9 @@ import uuid
 from fastapi import APIRouter, Query, status
 from pydantic import AwareDatetime
 
-from app.chat import service
-from app.chat.schemas import MessageCreate, MessageOut
-from app.core.deps import CurrentUserId, DbSession
+from backend.app.chat import service
+from backend.app.chat.schemas import MessageCreate, MessageOut
+from backend.app.core.deps import CurrentUserId, DbSession
 
 messages_router = APIRouter(prefix="/trips/{trip_id}/messages", tags=["messages"])
 

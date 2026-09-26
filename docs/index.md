@@ -20,6 +20,13 @@ Fakultas Teknik, Universitas Gadjah Mada
 
 # Lelaku
 
+## Dokumentasi Teknis dan Desain
+
+Catatan workflow branch, pull request, wireframe, color palette, component
+diagram, dan ERD tersedia di [Dokumentasi Proyek Lelaku](dokumentasi-proyek.md).
+
+---
+
 ## Nama Produk
 
 Lelaku

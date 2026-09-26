@@ -1,7 +1,7 @@
 import asyncio
 import uuid
 
-from tests.conftest import auth, make_trip, make_user, make_vehicle
+from backend.tests.conftest import auth, make_trip, make_user, make_vehicle
 
 
 async def _setup(client, seats: int = 2):

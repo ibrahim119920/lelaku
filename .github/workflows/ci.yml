@@ -4,15 +4,95 @@ on:
   push:
     branches:
       - main
+      - develop
+      - 'feature/**'
+      - 'integration/**'
       - initialize-github-actions
   pull_request:
     branches:
       - main
+      - develop
+      - 'feature/**'
 
 permissions:
   contents: read
 
 jobs:
+  backend-tests:
+    name: Backend tests and migration rendering
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: lelaku_test
+        ports:
+          - 55432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d lelaku_test"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install backend dependencies
+        run: python -m pip install -r backend/requirements-dev.txt
+
+      - name: Run backend tests
+        run: python -m pytest backend/tests -q
+        env:
+          APP_ENV: development
+          TEST_DATABASE_URL: postgresql+psycopg://postgres:postgres@127.0.0.1:55432/lelaku_test?sslmode=disable
+
+      - name: Render PostgreSQL migrations without connecting
+        run: python -m alembic -c backend/alembic.ini upgrade head --sql
+        env:
+          APP_ENV: development
+          DATABASE_URL: postgresql://ci-user:ci-password@localhost:5432/lelaku
+
+  frontend-checks:
+    name: Frontend tests, typecheck, and build
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install frontend dependencies
+        run: npm ci
+
+      - name: Run frontend tests
+        run: npm test
+
+      - name: Type-check frontend
+        run: npm run typecheck
+
+      - name: Build frontend
+        run: npm run build
+        env:
+          BACKEND_API_URL: http://localhost:8000
+          NEXT_PUBLIC_API_BASE_URL: http://localhost:8000
+
   markdown-lint:
     name: Markdown lint
     runs-on: ubuntu-latest

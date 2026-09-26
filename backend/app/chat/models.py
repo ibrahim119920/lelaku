@@ -4,7 +4,7 @@ from datetime import datetime
 from sqlalchemy import DateTime, ForeignKey, Index, String, Uuid, func
 from sqlalchemy.orm import Mapped, mapped_column
 
-from app.core.database import Base
+from backend.app.base import Base, UUIDText
 
 MESSAGE_MAX_LENGTH = 2000
 
@@ -15,6 +15,8 @@ class Message(Base):
 
     message_id: Mapped[uuid.UUID] = mapped_column(Uuid, primary_key=True, default=uuid.uuid4)
     trip_id: Mapped[uuid.UUID] = mapped_column(Uuid, ForeignKey("trips.trip_id", ondelete="CASCADE"))
-    sender_id: Mapped[uuid.UUID] = mapped_column(Uuid, ForeignKey("users.user_id", ondelete="CASCADE"))
+    sender_id: Mapped[uuid.UUID] = mapped_column(
+        UUIDText(), ForeignKey("users.user_id", ondelete="CASCADE")
+    )
     content: Mapped[str] = mapped_column(String(MESSAGE_MAX_LENGTH))
     sent_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())

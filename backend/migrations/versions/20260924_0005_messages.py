@@ -1,7 +1,7 @@
 """message
 
-Revision ID: 0004
-Revises: 0003
+Revision ID: 20260924_0005_messages
+Revises: 20260924_0004_requests_members
 Create Date: 2026-09-24 17:13:21.893938
 """
 
@@ -11,8 +11,8 @@ import sqlalchemy as sa
 from alembic import op
 
 
-revision: str = '0004'
-down_revision: str | None = '0003'
+revision: str = '20260924_0005_messages'
+down_revision: str | None = '20260924_0004_requests_members'
 branch_labels: str | Sequence[str] | None = None
 depends_on: str | Sequence[str] | None = None
 
@@ -22,7 +22,7 @@ def upgrade() -> None:
     op.create_table('messages',
     sa.Column('message_id', sa.Uuid(), nullable=False),
     sa.Column('trip_id', sa.Uuid(), nullable=False),
-    sa.Column('sender_id', sa.Uuid(), nullable=False),
+    sa.Column('sender_id', sa.Text(), nullable=False),
     sa.Column('content', sa.String(length=2000), nullable=False),
     sa.Column('sent_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=False),
     sa.ForeignKeyConstraint(['sender_id'], ['users.user_id'], name=op.f('fk_messages_sender_id_users'), ondelete='CASCADE'),

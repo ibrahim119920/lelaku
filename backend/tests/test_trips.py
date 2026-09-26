@@ -1,7 +1,7 @@
 import uuid
 from datetime import timedelta
 
-from tests.conftest import (
+from backend.tests.conftest import (
     MALIOBORO,
     NEAR_MALIOBORO,
     NEAR_UGM,

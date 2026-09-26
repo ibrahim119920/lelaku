@@ -1,47 +1,68 @@
 # Lelaku Backend
 
-FastAPI + SQLAlchemy (async, asyncpg) + Alembic. Kontrak API untuk frontend ada di [`../integration/`](../integration/README.md).
+FastAPI, SQLAlchemy, Psycopg 3, and Alembic. Psycopg is used for synchronous LL-05 auth/profile handlers and asynchronous trip/chat handlers through SQLAlchemy's async engine. API contracts consumed by the frontend are documented in [the auth/profile contract](../docs/auth-profile-contract.md).
 
-## Struktur
+## Structure
 
-```text
+~~~text
 app/
-├── main.py          # FastAPI app, CORS, error handler, registrasi router
-├── models.py        # import semua model (dipakai Alembic autogenerate)
-├── core/            # config, database session, security (JWT), deps, exceptions
-├── auth/            # PLACEHOLDER model users/driver_profiles/vehicles/user_sessions (lihat TODO(auth))
-├── trip/            # Trip, Riderequest, Tripmember, Rating (router → service → repository → schemas → models)
-└── chat/            # Message
-alembic/versions/    # migration, satu per domain
-tests/               # test integrasi terhadap Postgres
-```
+├── main.py          # FastAPI app, CORS, error handlers, and router registration
+├── base.py          # shared ORM Base and UUID-as-TEXT adapter
+├── models.py        # auth/profile/session/vehicle model registry
+├── core/            # settings, async database session, session-backed user dependency
+├── trip/            # trips, requests, members, ratings, and matching
+└── chat/            # trip messages
+migrations/versions/ # single Alembic chain beginning at the LL-05 schema
+tests/               # LL-05 auth/config and trip/chat tests
+~~~
 
-## Menjalankan
+Trip and chat endpoints use the same opaque, revocable lelaku_session cookie as LL-05. They resolve the current user from user_sessions; the temporary JWT placeholder has been removed.
 
-```bash
-cd backend
-python -m venv .venv
-.venv/Scripts/activate            # Windows (Git Bash: source .venv/Scripts/activate)
-pip install -r requirements-dev.txt
-cp .env.example .env              # isi DATABASE_URL, JWT_SECRET
-alembic upgrade head
-uvicorn app.main:app --reload     # http://localhost:8000/docs
-```
+users.user_id remains TEXT in PostgreSQL to preserve the LL-05 schema. The trip domain maps UUID strings to Python UUID values while keeping user foreign keys as TEXT.
 
-## Test
+## Run locally
 
-Test butuh database Postgres **kosong khusus test** (semua tabel di-drop dan dibuat ulang):
+From the repository root:
 
-```bash
-docker run -d --name lelaku-pg-test -e POSTGRES_PASSWORD=postgres -e POSTGRES_DB=lelaku_test -p 55432:5432 postgres:16-alpine
-TEST_DATABASE_URL=postgresql+asyncpg://postgres:postgres@localhost:55432/lelaku_test pytest
-```
+~~~powershell
+py -m venv .venv
+.\.venv\Scripts\Activate.ps1
+pip install -r backend\requirements-dev.txt
+Copy-Item backend\.env.example backend\.env
+~~~
 
-## Catatan Modul Auth
+Set DATABASE_URL in backend/.env. Run migrations and start the API:
 
-Modul auth asli dikerjakan terpisah. Sampai kodenya masuk repo:
+~~~powershell
+python -m alembic -c backend\alembic.ini upgrade head
+python -m uvicorn backend.app.main:app --reload --port 8000
+~~~
 
-- `app/auth/models.py` dan migration `0001_auth_placeholder` hanya placeholder sesuai ERD.
-- `app/core/security.py::get_current_user_id` membaca JWT (claim `sub` = `user_id`) dari cookie `access_token` atau header `Authorization: Bearer`, ditandatangani `JWT_SECRET` (HS256).
+APP_ENV=staging and APP_ENV=production require sslmode=verify-full. The database URL is only read by the backend; do not put it in frontend environment variables.
 
-Saat modul auth asli masuk: hapus placeholder, ganti `get_current_user_id`, dan ubah `down_revision` di `0002_trip.py` ke revision terakhir modul auth.
+## Tests
+
+Trip/chat integration tests recreate tables in a dedicated local PostgreSQL database. The test configuration rejects non-local hosts and database names that do not contain test.
+
+~~~powershell
+docker run --rm --name lelaku-pg-test -e POSTGRES_PASSWORD=postgres -e POSTGRES_DB=lelaku_test -p 55432:5432 postgres:16-alpine
+~~~
+
+In another terminal:
+
+~~~powershell
+$env:TEST_DATABASE_URL = "postgresql+psycopg://postgres:postgres@127.0.0.1:55432/lelaku_test?sslmode=disable"
+python -m pytest backend\tests -q
+~~~
+
+The separate Supabase integration test remains opt-in and requires its own staging project-reference allowlist.
+
+## Migration chain
+
+backend/migrations/versions/20260923_0001_auth_profile_sessions.py remains the first revision. The next revisions add vehicles, trips and matching, ride requests and members, messages, and ratings. The former 0001_auth_placeholder migration is not part of the chain; it would duplicate LL-05 auth tables.
+
+Check migration SQL without connecting to a database:
+
+~~~powershell
+python -m alembic -c backend\alembic.ini upgrade head --sql
+~~~
