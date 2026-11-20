@@ -1,6 +1,8 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
 
+import LogoutButton from "@/features/auth/logout-button";
+
 export default function MainLayout({ children }: { children: ReactNode }) {
   return (
     <>
@@ -12,6 +14,7 @@ export default function MainLayout({ children }: { children: ReactNode }) {
           <Link href="/trips">Perjalanan</Link>
           <Link href="/requests">Permintaan</Link>
           <Link href="/profile">Profil</Link>
+          <LogoutButton />
         </nav>
       </header>
       {children}

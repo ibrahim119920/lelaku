@@ -1,12 +1,9 @@
-export default function RequestsPage() {
-  return (
-    <main className="page-shell">
-      <section className="card">
-        <h1>Permintaan bergabung</h1>
-        <p className="muted">
-          Permintaan masuk dan status pengajuanmu akan tampil di sini.
-        </p>
-      </section>
-    </main>
-  );
+import RequestsView from "@/features/join-requests/requests-view";
+import { requireCurrentUser } from "@/lib/server/auth";
+
+// Guard dijalankan di server pada setiap render halaman (bukan hanya di layout, yang bisa
+// dipakai ulang saat navigasi client). Tanpa sesi valid -> redirect ke /login.
+export default async function RequestsPage() {
+  await requireCurrentUser();
+  return <RequestsView />;
 }

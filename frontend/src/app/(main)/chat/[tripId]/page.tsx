@@ -1,26 +1,9 @@
-import Link from "next/link";
+import ChatView from "@/features/chat/chat-view";
+import { requireCurrentUser } from "@/lib/server/auth";
 
-export default function ChatPage() {
-  return (
-    <main className="page-shell">
-      <section className="card stack">
-        <p>
-          <Link className="text-link" href="/trips">
-            ← Kembali ke perjalanan
-          </Link>
-        </p>
-        <h1>Chat perjalanan</h1>
-        <p className="muted">
-          Percakapan untuk perjalanan terpilih akan ditampilkan di sini.
-        </p>
-        <div className="field">
-          <label htmlFor="message">Pesan</label>
-          <textarea id="message" name="message" rows={4} placeholder="Tulis pesan..." />
-        </div>
-        <button className="button" type="button">
-          Kirim pesan
-        </button>
-      </section>
-    </main>
-  );
+// Guard dijalankan di server pada setiap render halaman (bukan hanya di layout, yang bisa
+// dipakai ulang saat navigasi client). Tanpa sesi valid -> redirect ke /login.
+export default async function ChatPage() {
+  await requireCurrentUser();
+  return <ChatView />;
 }

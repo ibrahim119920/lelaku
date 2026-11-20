@@ -15,15 +15,17 @@ import pytest
 os.environ["DATABASE_URL"] = os.environ.get(
     "TEST_DATABASE_URL", "postgresql+asyncpg://postgres:postgres@localhost:55432/lelaku_test"
 )
+# Test memakai http://test; cookie `Secure` tidak akan dikirim ulang lewat http.
+os.environ["APP_ENV"] = "development"
 
-import jwt  # noqa: E402
 from httpx import ASGITransport, AsyncClient  # noqa: E402
 from sqlalchemy import text  # noqa: E402
 
 import app.models  # noqa: E402, F401
-from app.auth.models import DriverProfile, User, Vehicle  # noqa: E402
+from app.auth.models import DriverProfile, User, UserSession, Vehicle  # noqa: E402
 from app.core.config import get_settings  # noqa: E402
 from app.core.database import Base, SessionLocal, engine  # noqa: E402
+from app.core.security import generate_session_token, hash_session_token  # noqa: E402
 from app.main import app  # noqa: E402
 
 
@@ -37,9 +39,14 @@ async def _schema():
     await engine.dispose()
 
 
+# user_id -> token cookie mentah, diisi oleh make_user() supaya auth() tetap sinkron.
+_SESSION_TOKENS: dict[uuid.UUID, str] = {}
+
+
 @pytest.fixture(autouse=True)
 async def _clean_tables():
     yield
+    _SESSION_TOKENS.clear()
     tables = ", ".join(t.name for t in Base.metadata.sorted_tables)
     async with engine.begin() as conn:
         await conn.execute(text(f"TRUNCATE {tables} CASCADE"))
@@ -52,9 +59,12 @@ async def client():
 
 
 def auth(user_id: uuid.UUID) -> dict[str, str]:
-    settings = get_settings()
-    token = jwt.encode({"sub": str(user_id)}, settings.jwt_secret, algorithm=settings.jwt_algorithm)
-    return {"Authorization": f"Bearer {token}"}
+    """Header Cookie untuk sesi milik user_id (dibuat oleh make_user).
+
+    User yang tidak dibuat lewat make_user mendapat token acak sehingga ditolak 401.
+    """
+    token = _SESSION_TOKENS.get(user_id) or generate_session_token()
+    return {"Cookie": f"{get_settings().session_cookie_name}={token}"}
 
 
 async def make_user(name: str = "User", *, driver_status: str | None = None) -> uuid.UUID:
@@ -64,7 +74,16 @@ async def make_user(name: str = "User", *, driver_status: str | None = None) -> 
         await session.flush()
         if driver_status is not None:
             session.add(DriverProfile(user_id=user.user_id, verification_status=driver_status))
+        token = generate_session_token()
+        session.add(
+            UserSession(
+                session_token_hash=hash_session_token(token),
+                user_id=user.user_id,
+                expires_at=datetime.now(UTC) + timedelta(hours=1),
+            )
+        )
         await session.commit()
+        _SESSION_TOKENS[user.user_id] = token
         return user.user_id
 
 

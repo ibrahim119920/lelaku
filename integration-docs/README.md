@@ -2,6 +2,7 @@
 
 Dokumentasi kontrak API backend (FastAPI) untuk tim frontend. Satu file per domain:
 
+- [auth-api.md](auth-api.md): register, login, logout, sesi, dan profil
 - [trip-api.md](trip-api.md): publish, search, rekomendasi, detail, status trip, anggota trip
 - [riderequest-api.md](riderequest-api.md): permintaan bergabung ke trip
 - [message-api.md](message-api.md): chat dalam trip
@@ -10,11 +11,12 @@ Dokumentasi kontrak API backend (FastAPI) untuk tim frontend. Satu file per doma
 ## Konvensi Umum
 
 - **Base URL (dev):** `http://localhost:8000`. Swagger UI tersedia di `/docs`.
-- **Autentikasi:** semua endpoint butuh login. Access token (JWT) dikirim otomatis lewat httpOnly cookie `access_token`, jadi request dari browser wajib memakai `credentials: "include"` (fetch) atau `withCredentials: true` (axios). Untuk testing manual bisa pakai header `Authorization: Bearer <token>`.
+- **Autentikasi:** semua endpoint (kecuali register/login) butuh sesi login. Backend mengirim cookie httpOnly `lelaku_session` saat `POST /auth/login`; request dari browser wajib memakai `credentials: "include"` (fetch) atau `withCredentials: true` (axios). Detail di [auth-api.md](auth-api.md). _(Sebelumnya dokumen ini menyebut JWT cookie `access_token` dan header Bearer; itu sudah diganti sesi server-side.)_
 - **Format waktu:** ISO 8601 dengan offset zona waktu, mis. `2026-10-01T07:30:00+07:00`. Response dikembalikan dalam UTC (`...Z` / `+00:00`); konversi ke waktu lokal di frontend.
 - **Format lokasi:** objek `{ "lat": number, "lng": number }` (hasil geocoding Nominatim).
 - **ID:** semua ID berupa UUID string.
 - **Format error:** `{ "detail": "Pesan error dalam bahasa Indonesia." }`. Error validasi (422) memakai format bawaan FastAPI: `{ "detail": [ { "loc": [...], "msg": "...", "type": "..." } ] }`.
+- **Format error modul auth** dan semua `401`: `{ "error": { "code": "...", "message": "...", "fields"?: {...} } }`. Frontend sebaiknya menangani kedua bentuk (`detail` dan `error.message`); lihat [auth-api.md](auth-api.md#format-error).
 
 | Status | Arti umum |
 | --- | --- |

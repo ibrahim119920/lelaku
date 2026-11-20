@@ -9,7 +9,7 @@ app/
 ├── main.py          # FastAPI app, CORS, error handler, registrasi router
 ├── models.py        # import semua model (dipakai Alembic autogenerate)
 ├── core/            # config, database session, security (JWT), deps, exceptions
-├── auth/            # PLACEHOLDER model users/driver_profiles/vehicles/user_sessions (lihat TODO(auth))
+├── auth/            # register/login/logout, profil, sesi cookie (router → service → repository → schemas → models)
 ├── trip/            # Trip, Riderequest, Tripmember, Rating (router → service → repository → schemas → models)
 └── chat/            # Message
 alembic/versions/    # migration, satu per domain
@@ -39,9 +39,10 @@ TEST_DATABASE_URL=postgresql+asyncpg://postgres:postgres@localhost:55432/lelaku_
 
 ## Catatan Modul Auth
 
-Modul auth asli dikerjakan terpisah. Sampai kodenya masuk repo:
+Auth memakai **sesi server-side**: login mengirim cookie `lelaku_session` (HttpOnly) berisi token opaque, dan database hanya menyimpan hash SHA-256-nya (`user_sessions`). Password di-hash Argon2 di threadpool. Kontrak endpoint: [`../integration-docs/auth-api.md`](../integration-docs/auth-api.md).
 
-- `app/auth/models.py` dan migration `0001_auth_placeholder` hanya placeholder sesuai ERD.
-- `app/core/security.py::get_current_user_id` membaca JWT (claim `sub` = `user_id`) dari cookie `access_token` atau header `Authorization: Bearer`, ditandatangani `JWT_SECRET` (HS256).
-
-Saat modul auth asli masuk: hapus placeholder, ganti `get_current_user_id`, dan ubah `down_revision` di `0002_trip.py` ke revision terakhir modul auth.
+- `app/auth/deps.py::get_current_user` adalah satu-satunya tempat sesi divalidasi; modul trip/chat memakai `CurrentUserId` (`app/core/deps.py`).
+- Set `APP_ENV=development` di `.env` untuk dev lokal. Selain itu cookie memakai flag `Secure` dan butuh HTTPS.
+- Jalankan `alembic upgrade head` (sampai `0006_auth_identity`). Test memakai `create_all`, jadi migration perlu dicoba terpisah di database kosong.
+- `Vehicle` masih placeholder (belum ada modul/endpoint kendaraan).
+- Belum ada: rate limiting login, pembersihan sesi kedaluwarsa, upload dokumen identitas (FR-03).

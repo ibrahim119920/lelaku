@@ -4,6 +4,7 @@ sqlalchemy[asyncio]>=2.0.30
 asyncpg>=0.30
 alembic>=1.13
 pydantic-settings>=2.4
-pyjwt>=2.9
+email-validator>=2.2
+pwdlib[argon2]>=0.3
 # Data zona waktu untuk zoneinfo (Windows tidak punya database tz bawaan)
 tzdata>=2024.1

@@ -18,6 +18,8 @@ from tests.conftest import (
 
 async def test_requires_auth(client):
     assert (await client.get("/trips")).status_code == 401
+    # Cookie sesi palsu/tidak dikenal ditolak; header Bearer tidak lagi dikenali sebagai login.
+    assert (await client.get("/trips", headers={"Cookie": "lelaku_session=rusak"})).status_code == 401
     assert (await client.get("/trips", headers={"Authorization": "Bearer rusak"})).status_code == 401
 
 
