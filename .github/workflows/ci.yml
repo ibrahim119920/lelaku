@@ -19,6 +19,24 @@ jobs:
   backend-tests:
     name: Backend tests and migration rendering
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: lelaku_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
 
     steps:
       - name: Checkout repository
@@ -30,16 +48,19 @@ jobs:
           python-version: '3.12'
 
       - name: Install backend dependencies
-        run: python -m pip install -r backend/requirements-dev.txt
+        run: python -m pip install -r requirements-dev.txt
 
       - name: Run backend tests
-        run: python -m pytest backend/tests -q
-
-      - name: Render PostgreSQL migrations without connecting
-        run: python -m alembic -c backend/alembic.ini upgrade head --sql
+        run: python -m pytest -q
         env:
           APP_ENV: development
-          DATABASE_URL: postgresql://ci-user:ci-password@localhost:5432/lelaku
+          TEST_DATABASE_URL: postgresql+asyncpg://postgres:postgres@localhost:5432/lelaku_test
+
+      - name: Render PostgreSQL migrations without connecting
+        run: python -m alembic -c alembic.ini upgrade head --sql
+        env:
+          APP_ENV: development
+          DATABASE_URL: postgresql+asyncpg://postgres:postgres@localhost:5432/lelaku
 
   frontend-checks:
     name: Frontend tests, typecheck, and build
