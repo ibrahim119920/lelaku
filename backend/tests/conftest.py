@@ -9,6 +9,7 @@ import os
 import uuid
 from datetime import UTC, datetime, time, timedelta
 from pathlib import Path
+from urllib.parse import urlsplit
 from zoneinfo import ZoneInfo
 
 import pytest
@@ -18,7 +19,7 @@ DEFAULT_TEST_DATABASE_URL = "postgresql+asyncpg://postgres:postgres@localhost:55
 
 def reject_unsafe_test_database_url(url: str) -> None:
     """Tolak database bersama (mis. Supabase) karena test menghapus seluruh tabel."""
-    host = url.rsplit("@", 1)[-1].split("/", 1)[0].lower()
+    host = (urlsplit(url).hostname or "").lower()
     if "supabase.co" in host and os.environ.get("ALLOW_SUPABASE_TEST_DB") != "1":
         raise RuntimeError(
             "TEST_DATABASE_URL menunjuk ke Supabase. Test melakukan drop/truncate tabel; "
