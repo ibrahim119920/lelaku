@@ -8,13 +8,42 @@ Semua tabel di-drop dan dibuat ulang di awal sesi test. JANGAN arahkan ke databa
 import os
 import uuid
 from datetime import UTC, datetime, time, timedelta
+from pathlib import Path
 from zoneinfo import ZoneInfo
 
 import pytest
 
-os.environ["DATABASE_URL"] = os.environ.get(
-    "TEST_DATABASE_URL", "postgresql+asyncpg://postgres:postgres@localhost:55432/lelaku_test"
-)
+DEFAULT_TEST_DATABASE_URL = "postgresql+asyncpg://postgres:postgres@localhost:55432/lelaku_test"
+
+
+def reject_unsafe_test_database_url(url: str) -> None:
+    """Tolak database bersama (mis. Supabase) karena test menghapus seluruh tabel."""
+    host = url.rsplit("@", 1)[-1].split("/", 1)[0].lower()
+    if "supabase.co" in host and os.environ.get("ALLOW_SUPABASE_TEST_DB") != "1":
+        raise RuntimeError(
+            "TEST_DATABASE_URL menunjuk ke Supabase. Test melakukan drop/truncate tabel; "
+            "set ALLOW_SUPABASE_TEST_DB=1 hanya jika database itu memang khusus test."
+        )
+
+
+def resolve_test_database_url() -> str:
+    """URL database test: env TEST_DATABASE_URL, lalu backend/.env, lalu default lokal.
+
+    Tidak pernah memakai DATABASE_URL aplikasi supaya test tidak menyentuh database development.
+    """
+    url = os.environ.get("TEST_DATABASE_URL", "").strip()
+    if not url:
+        env_file = Path(__file__).resolve().parents[1] / ".env"
+        if env_file.is_file():
+            from dotenv import dotenv_values
+
+            url = (dotenv_values(env_file).get("TEST_DATABASE_URL") or "").strip()
+    url = url or DEFAULT_TEST_DATABASE_URL
+    reject_unsafe_test_database_url(url)
+    return url
+
+
+os.environ["DATABASE_URL"] = resolve_test_database_url()
 # Test memakai http://test; cookie `Secure` tidak akan dikirim ulang lewat http.
 os.environ["APP_ENV"] = "development"
 
