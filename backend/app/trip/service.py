@@ -193,7 +193,11 @@ async def get_trip_detail(session: AsyncSession, trip_id: uuid.UUID) -> TripDeta
             user_id=driver.user_id,
             name=driver.name,
             profile_photo=driver.profile_photo,
-            avg_rating_driver=profile.avg_rating_driver if profile else 0,
+            avg_rating_driver=(
+                profile.avg_rating_driver
+                if profile is not None and profile.avg_rating_driver is not None
+                else 0
+            ),
             total_ratings_driver=profile.total_ratings_driver if profile else 0,
         ),
         vehicle=VehicleInfo.model_validate(vehicle),
@@ -269,7 +273,13 @@ async def list_ride_requests(
     return [
         RideRequestWithRequesterOut(
             **RideRequestOut.model_validate(ride_request).model_dump(),
-            requester=RequesterInfo.model_validate(requester),
+            requester=RequesterInfo(
+                user_id=requester.user_id,
+                name=requester.name,
+                profile_photo=requester.profile_photo,
+                avg_rating=requester.avg_rating if requester.avg_rating is not None else 0,
+                total_ratings=requester.total_ratings,
+            ),
         )
         for ride_request, requester in await repo.list_requests_for_trip(session, trip_id, status)
     ]
