@@ -2,6 +2,12 @@
 
 Semua perubahan penting pada backend (FastAPI) dicatat di file ini.
 
+## [2026-11-23] Adopsi arsitektur auth async/UUID Bayu sebagai basis
+
+**Jenis:** Refactor + perbaikan
+**Deskripsi:** Menjadikan branch `feature/auth-session-and-frontend-integration` (`69b7dc2`) sebagai basis kode: auth async/UUID, migrasi `backend/alembic/0001`–`0006`, dan modul trip/chat yang sudah memakai `CurrentUserId`. Auth sync lama (`auth_routes.py`, `auth_dependencies.py`, `profile_routes.py`, `UUIDText`, rantai `backend/migrations/`) tidak dibawa. Dokumentasi LL-05 dari branch lama disalin dan disinkronkan dengan kontrak `integration-docs/auth-api.md`. Perbaikan `16bd46f` diport: `avg_rating_driver` dan `RequesterInfo.avg_rating` menjadi `0` bila nilainya `None`, dengan test regresi. Test P0 dipulihkan: cookie `Secure` di production/default, CORS hanya origin terkonfigurasi, validasi nomor telepon, PATCH profile tidak bisa menargetkan user lain, error validasi tidak membocorkan password, dan guard `TEST_DATABASE_URL` (menolak `supabase.co` kecuali `ALLOW_SUPABASE_TEST_DB=1`). `backend/.env.example` kini memuat `TEST_DATABASE_URL`. Seluruh 91 test lulus terhadap PostgreSQL lokal.
+**File yang terdampak:** backend/app/trip/service.py, backend/tests/test_trips.py, backend/tests/test_auth.py, backend/tests/test_security_config.py, backend/tests/conftest.py, backend/.env.example, backend/README.md, docs/auth-profile-contract.md, docs/database-setup.md, docs/dokumentasi-proyek.md, docs/index.md, README.md
+
 ## [2026-09-24] Scaffold backend FastAPI + placeholder modul auth
 
 **Jenis:** Fitur baru

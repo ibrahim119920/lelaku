@@ -1,6 +1,6 @@
 # Lelaku Backend
 
-FastAPI + SQLAlchemy (async, asyncpg) + Alembic. Kontrak API untuk frontend ada di [`../integration/`](../integration/README.md).
+FastAPI + SQLAlchemy (async, asyncpg) + Alembic. Kontrak API untuk frontend ada di [`../integration-docs/`](../integration-docs/README.md).
 
 ## Struktur
 
@@ -8,7 +8,7 @@ FastAPI + SQLAlchemy (async, asyncpg) + Alembic. Kontrak API untuk frontend ada 
 app/
 ├── main.py          # FastAPI app, CORS, error handler, registrasi router
 ├── models.py        # import semua model (dipakai Alembic autogenerate)
-├── core/            # config, database session, security (JWT), deps, exceptions
+├── core/            # config, database session, security (Argon2 + hash token sesi), deps, exceptions
 ├── auth/            # register/login/logout, profil, sesi cookie (router → service → repository → schemas → models)
 ├── trip/            # Trip, Riderequest, Tripmember, Rating (router → service → repository → schemas → models)
 └── chat/            # Message
@@ -23,19 +23,33 @@ cd backend
 python -m venv .venv
 .venv/Scripts/activate            # Windows (Git Bash: source .venv/Scripts/activate)
 pip install -r requirements-dev.txt
-cp .env.example .env              # isi DATABASE_URL, JWT_SECRET
+cp .env.example .env              # isi DATABASE_URL dan TEST_DATABASE_URL
 alembic upgrade head
+alembic check
 uvicorn app.main:app --reload     # http://localhost:8000/docs
 ```
 
+Semua perintah dijalankan dari folder `backend/` karena import memakai `app.*`
+dan `Settings` membaca `.env` relatif terhadap working directory.
+
 ## Test
 
-Test butuh database Postgres **kosong khusus test** (semua tabel di-drop dan dibuat ulang):
+Test butuh database Postgres **kosong khusus test** (semua tabel di-drop dan
+dibuat ulang). Isi `TEST_DATABASE_URL` di environment atau `backend/.env`:
+
+```bash
+pytest
+```
+
+Contoh database test lokal dengan Docker:
 
 ```bash
 docker run -d --name lelaku-pg-test -e POSTGRES_PASSWORD=postgres -e POSTGRES_DB=lelaku_test -p 55432:5432 postgres:16-alpine
 TEST_DATABASE_URL=postgresql+asyncpg://postgres:postgres@localhost:55432/lelaku_test pytest
 ```
+
+Test tidak pernah memakai `DATABASE_URL` aplikasi dan menolak host
+`supabase.co` kecuali `ALLOW_SUPABASE_TEST_DB=1` diset.
 
 ## Catatan Modul Auth
 
