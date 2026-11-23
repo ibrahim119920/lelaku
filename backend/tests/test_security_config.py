@@ -68,11 +68,25 @@ async def test_cors_rejects_unknown_origin(client):
     assert "access-control-allow-origin" not in resp.headers
 
 
-def test_test_database_guard_rejects_supabase():
+@pytest.mark.parametrize(
+    "url",
+    [
+        "postgresql+asyncpg://user:secret@aws-0-ap-southeast-1.pooler.supabase.co:5432/postgres",
+        "postgresql+asyncpg://db.ref123.supabase.co:5432/postgres",
+        "postgresql://db.ref123.supabase.co/postgres",
+        "postgres://db.ref123.supabase.co:5432/postgres",
+    ],
+)
+def test_test_database_guard_rejects_supabase(url):
     with pytest.raises(RuntimeError, match="Supabase"):
-        reject_unsafe_test_database_url(
-            "postgresql+asyncpg://user:secret@aws-0-ap-southeast-1.pooler.supabase.co:5432/postgres"
-        )
+        reject_unsafe_test_database_url(url)
+
+
+def test_test_database_guard_checks_hostname_not_credentials():
+    # Kata "supabase.co" di password tidak boleh memicu false positive.
+    reject_unsafe_test_database_url(
+        "postgresql+asyncpg://postgres:supabase.co@localhost:5432/lelaku_test"
+    )
 
 
 def test_test_database_guard_can_be_overridden_explicitly(monkeypatch):

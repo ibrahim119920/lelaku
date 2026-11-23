@@ -2,6 +2,12 @@
 
 Semua perubahan penting pada backend (FastAPI) dicatat di file ini.
 
+## [2026-11-23] Perketat guard database test dan test regresi rating requester
+
+**Jenis:** Perbaikan + test
+**Deskripsi:** Guard `TEST_DATABASE_URL` kini mengambil hostname lewat `urllib.parse.urlsplit`, sehingga URL Supabase tanpa kredensial (`postgresql+asyncpg://db.ref.supabase.co/...`) tetap ditolak; sebelumnya hanya URL berisi `@` yang terdeteksi. Ditambahkan kasus URL tanpa kredensial, variasi skema `postgres://`, dan test bahwa kata `supabase.co` di password tidak memicu false positive. Ditambahkan test regresi untuk `RequesterInfo.avg_rating` bernilai `None` pada `GET /trips/{trip_id}/requests`: respons harus `200` dengan `avg_rating == 0`, sehingga perbaikan `16bd46f` benar-benar dijaga. Seluruh 96 test lulus.
+**File yang terdampak:** backend/tests/conftest.py, backend/tests/test_security_config.py, backend/tests/test_trips.py
+
 ## [2026-11-23] Adopsi arsitektur auth async/UUID Bayu sebagai basis
 
 **Jenis:** Refactor + perbaikan

@@ -1,10 +1,12 @@
 import uuid
 from datetime import timedelta
+from types import SimpleNamespace
 
 from sqlalchemy import delete
 
 from app.auth.models import DriverProfile
 from app.core.database import SessionLocal
+from app.trip import repository as repo
 from tests.conftest import (
     MALIOBORO,
     NEAR_MALIOBORO,
@@ -14,6 +16,7 @@ from tests.conftest import (
     auth,
     future,
     make_trip,
+    make_trip_with_passenger,
     make_user,
     make_vehicle,
     tomorrow_wib,
@@ -182,3 +185,30 @@ async def test_trip_detail_without_driver_profile_uses_zero_rating(client):
     resp = await client.get(f"/trips/{trip['trip_id']}", headers=auth(driver))
     assert resp.status_code == 200
     assert resp.json()["driver"]["avg_rating_driver"] == 0
+
+
+async def test_requester_without_rating_is_normalized_to_zero(client, monkeypatch):
+    driver, _passenger, trip = await make_trip_with_passenger(client)
+    original = repo.list_requests_for_trip
+
+    async def with_null_rating(session, trip_id, status=None):
+        rows = await original(session, trip_id, status)
+        return [
+            (
+                ride_request,
+                SimpleNamespace(
+                    user_id=requester.user_id,
+                    name=requester.name,
+                    profile_photo=requester.profile_photo,
+                    avg_rating=None,
+                    total_ratings=0,
+                ),
+            )
+            for ride_request, requester in rows
+        ]
+
+    monkeypatch.setattr(repo, "list_requests_for_trip", with_null_rating)
+
+    resp = await client.get(f"/trips/{trip['trip_id']}/requests", headers=auth(driver))
+    assert resp.status_code == 200, resp.text
+    assert resp.json()[0]["requester"]["avg_rating"] == 0
