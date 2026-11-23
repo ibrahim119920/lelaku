@@ -72,6 +72,38 @@ async def test_register_rejects_unknown_fields(client):
     assert resp.status_code == 422  # tidak boleh mengangkat diri sendiri jadi verified
 
 
+@pytest.mark.parametrize(
+    "phone",
+    ["081234567890", "+62 812-3456-789", "+6281234567890", "0274-123-4567", "0812 3456 7890"],
+)
+async def test_register_accepts_valid_phone_numbers(client, phone):
+    resp = await register(client, phone=phone)
+    assert resp.status_code == 201, resp.text
+    assert resp.json()["data"]["phone"] == phone.strip()
+
+
+@pytest.mark.parametrize(
+    "phone",
+    ["abc", "telepon saya", "123", "1234567890123456", "++6281234567890", "+62abc123", "8123"],
+)
+async def test_register_rejects_invalid_phone_numbers(client, phone):
+    resp = await register(client, phone=phone)
+    assert resp.status_code == 422
+    assert "phone" in resp.json()["error"]["fields"]
+
+
+async def test_register_rejects_text_in_phone_field(client):
+    resp = await register(client, phone="nomor saya 081234567890")
+    assert resp.status_code == 422
+    assert resp.json()["error"]["fields"]["phone"] == "Periksa kembali nomor telepon."
+
+
+async def test_validation_error_does_not_echo_password(client):
+    resp = await register(client, password="rahasia")
+    assert resp.status_code == 422
+    assert "rahasia" not in resp.text
+
+
 # ---------- login / sesi ----------
 
 
@@ -194,3 +226,30 @@ async def test_users_are_isolated_by_session(client):
     two = await client.get("/auth/me", headers=auth(second))
     assert one.json()["data"]["name"] == "Pertama"
     assert two.json()["data"]["name"] == "Kedua"
+
+
+async def test_profile_patch_cannot_target_another_user(client):
+    victim = await make_user("Korban")
+    attacker = await make_user("Penyerang")
+
+    resp = await client.patch(
+        "/profile",
+        json={"name": "Diubah", "phone": "081234567890", "user_id": str(victim)},
+        headers=auth(attacker),
+    )
+    assert resp.status_code == 422
+
+    # Data korban tidak berubah dan penyerang tetap memakai namanya sendiri.
+    victim_me = await client.get("/auth/me", headers=auth(victim))
+    attacker_me = await client.get("/auth/me", headers=auth(attacker))
+    assert victim_me.json()["data"]["name"] == "Korban"
+    assert attacker_me.json()["data"]["name"] == "Penyerang"
+
+
+@pytest.mark.parametrize("phone", ["abc", "123", "1234567890123456", "nomor saya"])
+async def test_profile_patch_rejects_invalid_phone(client, phone):
+    await register(client)
+    await login(client)
+    resp = await client.patch("/profile", json={"name": "Naya Baru", "phone": phone})
+    assert resp.status_code == 422
+    assert "phone" in resp.json()["error"]["fields"]
