@@ -1,45 +1,9 @@
-import Link from "next/link";
-
+import NewTripView from "@/features/trips/new-trip-view";
 import { requireCurrentUser } from "@/lib/server/auth";
 
+// Guard dijalankan di server pada setiap render halaman (bukan hanya di layout, yang bisa
+// dipakai ulang saat navigasi client). Tanpa sesi valid -> redirect ke /login.
 export default async function NewTripPage() {
   await requireCurrentUser();
-
-  return (
-    <main className="page-shell">
-      <section className="card">
-        <p>
-          <Link className="text-link" href="/trips">
-            ← Kembali ke perjalanan
-          </Link>
-        </p>
-        <h1>Buat perjalanan</h1>
-        <p className="muted">
-          Bagikan rencana perjalananmu dengan calon teman seperjalanan.
-        </p>
-
-        <form className="form-grid">
-          <div className="field">
-            <label htmlFor="origin">Titik keberangkatan</label>
-            <input id="origin" name="origin" type="text" required />
-          </div>
-          <div className="field">
-            <label htmlFor="destination">Tujuan</label>
-            <input id="destination" name="destination" type="text" required />
-          </div>
-          <div className="field">
-            <label htmlFor="departure">Waktu keberangkatan</label>
-            <input id="departure" name="departure" type="datetime-local" required />
-          </div>
-          <div className="field">
-            <label htmlFor="description">Deskripsi</label>
-            <textarea id="description" name="description" rows={4} />
-          </div>
-          <button className="button" type="submit">
-            Publikasikan perjalanan
-          </button>
-        </form>
-      </section>
-    </main>
-  );
+  return <NewTripView />;
 }

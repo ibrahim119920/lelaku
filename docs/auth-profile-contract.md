@@ -1,8 +1,9 @@
 # Kontrak implementasi Auth dan Profile (LL-05)
 
-Kontrak ini merinci DTO dan endpoint LL-05. Penambahan schema `identity_status`
-dan `USER_SESSION` telah disetujui Bayu. Jika kontrak endpoint LL-03 berbeda,
-kontrak utama LL-03 tetap menjadi acuan.
+Kontrak ini merinci DTO dan endpoint LL-05. Kontrak API kanonik ada di
+[`../integration-docs/auth-api.md`](../integration-docs/auth-api.md); dokumen ini
+merangkum batas data dan keputusan desainnya. Penambahan schema
+`identity_status` dan `USER_SESSION` telah disetujui Bayu.
 
 ## Batas data
 
@@ -10,13 +11,13 @@ Endpoint auth/profile hanya mengembalikan DTO publik berikut:
 
 ```json
 {
-  "user_id": "user-123",
+  "user_id": "6f1c2a34-9b7e-4c1d-8a2f-0d5e7b9c1a23",
   "name": "Nama Pengguna",
   "email": "user@example.com",
   "phone": "+628123456789",
   "profile_photo": null,
   "identity_status": "unverified",
-  "avg_rating": null,
+  "avg_rating": 0.0,
   "total_ratings": 0,
   "total_trips_completed": 0
 }
@@ -40,7 +41,8 @@ Bayu menyetujui penyesuaian schema berikut untuk mendukung LL-05:
   kedaluwarsa, dan pencabutan session.
 
 Implementasi fisik memakai nama tabel PostgreSQL `users`, `driver_profiles`,
-dan `user_sessions`.
+dan `user_sessions`. Seluruh `user_id` bertipe `uuid`; nilai di JSON tetap
+direpresentasikan sebagai string UUID.
 
 ## Session
 
@@ -57,8 +59,9 @@ yang dapat dibaca JavaScript. Logout membatalkan session di backend dan
 menghapus cookie dengan atribut yang sama.
 
 Browser memanggil FastAPI langsung. CORS hanya mengizinkan origin persis dari
-`FRONTEND_ORIGIN` pada konfigurasi backend dan memakai `credentials: include`;
-wildcard origin tidak digunakan. Cookie tidak menetapkan `Domain`, sehingga bersifat host-only.
+`CORS_ORIGINS` pada konfigurasi backend dan memakai `credentials: include`;
+wildcard origin tidak digunakan. Cookie tidak menetapkan `Domain`, sehingga
+bersifat host-only.
 `SameSite=Lax`; `Secure` aktif untuk semua nilai `APP_ENV` selain `dev` atau
 `development`; jika `APP_ENV` tidak diset, cookie memakai `Secure`. TTL default
 tujuh hari dan dapat diatur melalui
@@ -149,7 +152,7 @@ umum (spasi, titik, tanda kurung, atau strip); huruf dan format lain ditolak.
     "code": "VALIDATION_ERROR",
     "message": "Periksa kembali input.",
     "fields": {
-      "email": "Format email tidak valid."
+      "email": "Masukkan email yang valid."
     }
   }
 }
@@ -161,13 +164,14 @@ ke pengguna dan tidak boleh berisi password, hash, session ID, atau detail SQL.
 ## Status implementasi
 
 Register, login, logout, pemeriksaan session (`/auth/me`), serta GET/PATCH
-profile telah mengikuti kontrak di atas. Backend menghash token cookie sebelum
-mencari session, menolak session kedaluwarsa/dicabut, dan mengambil target
-profile hanya dari session aktif. Setiap page di route group `(main)` memeriksa
-`/auth/me` di server saat render dan mengarahkan pengguna tanpa session ke
-`/login`; pemeriksaan tidak hanya bergantung pada layout yang dapat digunakan
-ulang saat navigasi. Kegagalan koneksi/non-401 dari backend menampilkan kondisi
-layanan tidak tersedia dengan opsi coba lagi, bukan dianggap sebagai logout.
-Frontend di branch LL-05 memanggil API melalui `NEXT_PUBLIC_API_BASE_URL`; server
-component memakai `BACKEND_API_URL` dan hanya meneruskan cookie
-`lelaku_session` ke backend.
+profile telah mengikuti kontrak di atas. Backend memakai SQLAlchemy async,
+`user_id` bertipe `uuid`, dan menghash token cookie sebelum mencari session.
+Backend menolak session kedaluwarsa/dicabut dan mengambil target profile hanya
+dari session aktif. Rating pengguna baru bernilai `0.0`, bukan `null`. Setiap
+page di route group `(main)` memeriksa `/auth/me` di server saat render dan
+mengarahkan pengguna tanpa session ke `/login`; pemeriksaan tidak hanya
+bergantung pada layout yang dapat digunakan ulang saat navigasi. Kegagalan
+koneksi/non-401 dari backend menampilkan kondisi layanan tidak tersedia dengan
+opsi coba lagi, bukan dianggap sebagai logout. Frontend memanggil API melalui
+`NEXT_PUBLIC_API_BASE_URL`; server component memakai `BACKEND_API_URL` dan hanya
+meneruskan cookie `lelaku_session` ke backend.

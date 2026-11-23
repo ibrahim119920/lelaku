@@ -3,7 +3,7 @@
 Dokumen ini menyimpan catatan workflow Git, rancangan UI/UX, palette warna,
 component diagram, ERD, serta struktur data utama aplikasi Lelaku.
 
-> Terakhir diperbarui: 21 September 2026
+> Terakhir diperbarui: 23 November 2026
 
 ## 1. Workflow Branch, Pull Request, Review, dan Merge
 
@@ -13,10 +13,14 @@ component diagram, ERD, serta struktur data utama aplikasi Lelaku.
 main
 └── develop
     ├── feature/05-authentication
-    ├── feature/06-profile-vehicle
-    ├── fix/04-ci-config
-    └── chore/04-repository-setup
+    ├── feature/07-08-api-and-matching
+    ├── integration/ll05-07-08
+    └── feature/auth-session-and-frontend-integration
 ~~~
+
+Branch integrasi boleh dibuat sementara untuk menggabungkan beberapa ruang
+lingkup sebelum masuk ke develop. Setelah PR selesai, branch fitur/integrasi
+dapat dihapus; `main` dan `develop` tetap menjadi acuan.
 
 ### Aturan branch
 
@@ -36,10 +40,10 @@ catatan perubahan sudah diperiksa sendiri dan pemeriksaan otomatis berhasil.
 
 | Branch | Basis yang disarankan | Target PR | PR dibuat | Review mandiri | CI/lint/type-check | Merge ke develop |
 | --- | --- | --- | --- | --- | --- | --- |
-| feature/05-authentication | develop | develop | [ ] | [ ] | [ ] | [ ] |
-| feature/06-profile-vehicle | develop | develop | [ ] | [ ] | [ ] | [ ] |
-| fix/04-ci-config | develop | develop | [ ] | [ ] | [ ] | [ ] |
-| chore/04-repository-setup | develop | develop | [ ] | [ ] | [ ] | [ ] |
+| feature/05-authentication | develop | develop | [x] | [ ] | [x] | [ ] |
+| feature/07-08-api-and-matching | develop | develop | [x] | [ ] | [x] | [ ] |
+| integration/ll05-07-08 | feature/05 + feature/07-08 | develop | [x] | [ ] | [x] | [ ] |
+| feature/auth-session-and-frontend-integration | develop | develop | [ ] | [ ] | [ ] | [ ] |
 
 Sebelum merge, pemilik branch mencatat hal-hal berikut pada pull request:
 
@@ -93,6 +97,13 @@ backend. Backend terdiri dari modul Auth & Identity, Trip Matching,
 Chat & Rating, dan Risk Detection AI. Data disimpan menggunakan
 PostgreSQL sebagai database utama, Redis untuk cache/data sementara, dan
 Azure Blob Storage untuk penyimpanan file.
+
+Implementasi backend memakai SQLAlchemy async dengan driver `asyncpg` dan
+Alembic untuk migrasi. Kode disusun per domain di `backend/app/`:
+`auth/`, `trip/`, dan `chat/`, dengan `core/` untuk konfigurasi, database,
+security, dependency, dan exception. Seluruh primary key dan foreign key
+memakai `uuid`. Rantai migrasi berada di `backend/alembic/versions/`
+(`0001`–`0006`) dan dijalankan dari folder `backend/`.
 
 ~~~mermaid
 flowchart LR
@@ -165,7 +176,7 @@ erDiagram
     USER ||--o{ RATING : "menerima rating"
 
     USER {
-        string user_id PK
+        uuid user_id PK
         string name
         string email
         string phone
@@ -179,14 +190,14 @@ erDiagram
 
     USER_SESSION {
         string session_token_hash PK
-        string user_id FK
+        uuid user_id FK
         datetime created_at
         datetime expires_at
         datetime revoked_at
     }
 
     DRIVER_PROFILE {
-        string user_id PK
+        uuid user_id PK
         string document_url
         string verification_status
         decimal avg_rating_driver
@@ -195,8 +206,8 @@ erDiagram
     }
 
     VEHICLE {
-        string vehicle_id PK
-        string driver_id FK
+        uuid vehicle_id PK
+        uuid driver_id FK
         string type
         string brand
         string model
@@ -205,9 +216,9 @@ erDiagram
     }
 
     TRIP {
-        string trip_id PK
-        string driver_id FK
-        string vehicle_id FK
+        uuid trip_id PK
+        uuid driver_id FK
+        uuid vehicle_id FK
         string origin
         string destination
         datetime departure_time
@@ -218,43 +229,43 @@ erDiagram
     }
 
     RIDE_REQUEST {
-        string request_id PK
-        string requester_id FK
-        string trip_id FK
+        uuid request_id PK
+        uuid requester_id FK
+        uuid trip_id FK
         string pickup
         string status
         datetime created_at
     }
 
     TRIP_MEMBER {
-        string trip_member_id PK
-        string trip_id FK
-        string user_id FK
-        string ride_request_id FK
+        uuid trip_member_id PK
+        uuid trip_id FK
+        uuid user_id FK
+        uuid ride_request_id FK
         string status
     }
 
     TRIP_MATCH {
-        string match_id PK
-        string trip_id FK
-        string matched_trip_id FK
+        uuid match_id PK
+        uuid trip_id FK
+        uuid matched_trip_id FK
         decimal route_similarity
         decimal match_score
     }
 
     MESSAGE {
-        string message_id PK
-        string trip_id FK
-        string sender_id FK
+        uuid message_id PK
+        uuid trip_id FK
+        uuid sender_id FK
         string content
         datetime send_at
     }
 
     RATING {
-        string rating_id PK
-        string trip_id FK
-        string rater_id FK
-        string rated_user_id FK
+        uuid rating_id PK
+        uuid trip_id FK
+        uuid rater_id FK
+        uuid rated_user_id FK
         string role_context
         int score
     }
@@ -305,7 +316,8 @@ verifikasi driver dan tidak digunakan sebagai status identitas umum pengguna.
 LL-05 juga menggunakan entitas `USER_SESSION` yang disetujui untuk session
 server-side. Database hanya menyimpan digest SHA-256 dari token opaque, bukan
 nilai cookie mentah. Rincian kontrak auth/profile/session ada di
-[`auth-profile-contract.md`](auth-profile-contract.md).
+[`auth-profile-contract.md`](auth-profile-contract.md), sedangkan kontrak API
+kanonik ada di [`../integration-docs/auth-api.md`](../integration-docs/auth-api.md).
 
 ## 6. Pemeliharaan Dokumentasi
 

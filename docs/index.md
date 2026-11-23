@@ -25,6 +25,10 @@ Fakultas Teknik, Universitas Gadjah Mada
 Catatan workflow branch, pull request, wireframe, color palette, component
 diagram, dan ERD tersedia di [Dokumentasi Proyek Lelaku](dokumentasi-proyek.md).
 
+Panduan database dan migrasi ada di [Database PostgreSQL](database-setup.md).
+Kontrak auth/profile ada di [Kontrak Auth dan Profile](auth-profile-contract.md),
+dengan kontrak API kanonik di [`integration-docs/`](../integration-docs/README.md).
+
 ---
 
 ## Nama Produk

@@ -303,3 +303,99 @@ button.button {
     transition-duration: 0.01ms !important;
   }
 }
+
+/* ---- Integrasi API: daftar, badge, request, chat ---- */
+.row {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  justify-content: space-between;
+}
+
+.row h1,
+.row h2 {
+  margin: 0;
+}
+
+.stack.tight {
+  gap: 0.4rem;
+}
+
+.actions.inline {
+  margin-top: 0;
+}
+
+.badge {
+  background: #e2e8f0;
+  border-radius: 999px;
+  color: var(--foreground);
+  font-size: 0.8rem;
+  font-weight: 700;
+  padding: 0.2rem 0.7rem;
+}
+
+.badge.published,
+.badge.accepted,
+.badge.completed {
+  background: #ccfbf1;
+  color: var(--primary-dark);
+}
+
+.badge.ongoing,
+.badge.pending {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.badge.cancelled,
+.badge.rejected {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.search-form {
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  max-width: none;
+}
+
+.search-form .actions,
+.search-form .form-status {
+  grid-column: 1 / -1;
+}
+
+.request-item {
+  border: 1px solid var(--border);
+  border-radius: 0.75rem;
+  display: grid;
+  gap: 0.5rem;
+  padding: 1rem;
+}
+
+.request-item p {
+  margin: 0;
+}
+
+.chat-log {
+  border: 1px solid var(--border);
+  border-radius: 0.75rem;
+  display: grid;
+  gap: 0.75rem;
+  max-height: 55vh;
+  overflow-y: auto;
+  padding: 1rem;
+}
+
+.chat-message p {
+  margin: 0.25rem 0 0;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.site-header .site-nav button.link-button {
+  background: none;
+  border: 0;
+  color: var(--primary-dark);
+  font-weight: 600;
+  padding: 0;
+}
