@@ -1,6 +1,10 @@
 import uuid
 from datetime import timedelta
 
+from sqlalchemy import delete
+
+from app.auth.models import DriverProfile
+from app.core.database import SessionLocal
 from tests.conftest import (
     MALIOBORO,
     NEAR_MALIOBORO,
@@ -164,3 +168,17 @@ async def test_status_transitions(client):
     assert (await client.patch(url, json={"status": "ongoing"}, headers=auth(driver))).status_code == 409
     assert (await client.patch(url, json={"status": "completed"}, headers=auth(driver))).json()["status"] == "completed"
     assert (await client.patch(url, json={"status": "cancelled"}, headers=auth(driver))).status_code == 409
+
+
+async def test_trip_detail_without_driver_profile_uses_zero_rating(client):
+    driver = await make_user("Tanpa Profil", driver_status="verified")
+    vehicle = await make_vehicle(driver)
+    trip = await make_trip(client, driver, vehicle)
+
+    async with SessionLocal() as session:
+        await session.execute(delete(DriverProfile).where(DriverProfile.user_id == driver))
+        await session.commit()
+
+    resp = await client.get(f"/trips/{trip['trip_id']}", headers=auth(driver))
+    assert resp.status_code == 200
+    assert resp.json()["driver"]["avg_rating_driver"] == 0
