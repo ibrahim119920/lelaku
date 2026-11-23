@@ -57,9 +57,34 @@ async def test_cancelled_member_loses_access(client):
 async def test_validation_and_404(client):
     driver, _, trip = await make_trip_with_passenger(client)
     assert (await _send(client, trip["trip_id"], driver, "")).status_code == 422
+    assert (await _send(client, trip["trip_id"], driver, "x" * 2000)).status_code == 201
     assert (await _send(client, trip["trip_id"], driver, "x" * 2001)).status_code == 422
     assert (await _send(client, str(uuid.uuid4()), driver, "hai")).status_code == 404
     naive = await client.get(
         f"/trips/{trip['trip_id']}/messages", params={"after": "2026-01-01T00:00:00"}, headers=auth(driver)
     )
     assert naive.status_code == 422
+
+
+async def test_message_content_is_trimmed(client):
+    driver, passenger, trip = await make_trip_with_passenger(client)
+    resp = await _send(client, trip["trip_id"], passenger, "  halo pak  ")
+    assert resp.status_code == 201
+    assert resp.json()["content"] == "halo pak"
+
+    history = await client.get(f"/trips/{trip['trip_id']}/messages", headers=auth(driver))
+    assert [m["content"] for m in history.json()] == ["halo pak"]
+
+
+async def test_whitespace_only_message_is_rejected(client):
+    driver, _, trip = await make_trip_with_passenger(client)
+    assert (await _send(client, trip["trip_id"], driver, "   ")).status_code == 422
+    assert (await _send(client, trip["trip_id"], driver, "\n\t ")).status_code == 422
+
+
+async def test_chat_requires_authentication(client):
+    _, _, trip = await make_trip_with_passenger(client)
+    assert (await client.get(f"/trips/{trip['trip_id']}/messages")).status_code == 401
+    assert (
+        await client.post(f"/trips/{trip['trip_id']}/messages", json={"content": "hai"})
+    ).status_code == 401

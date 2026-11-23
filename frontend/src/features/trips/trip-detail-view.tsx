@@ -11,6 +11,7 @@ import { LocationLink, TripCard } from "@/features/trips/trip-card";
 import { apiFetch, jsonBody, toApiError, type ApiError } from "@/lib/api/client";
 import type { RecommendedTrip, TripDetail, TripMember, TripStatus } from "@/lib/api/types";
 import { useApi } from "@/lib/api/use-api";
+import { isChatParticipant } from "@/lib/chat";
 import { TRIP_STATUS_LABEL, formatDateTime, formatRupiah } from "@/lib/format";
 
 // Cermin ALLOWED_STATUS_TRANSITIONS di backend/app/trip/service.py.
@@ -27,7 +28,7 @@ const NEXT_STATUSES: Record<TripStatus, { status: "ongoing" | "completed" | "can
   cancelled: [],
 };
 
-export default function TripDetailView() {
+export default function TripDetailView({ currentUserId }: { currentUserId: string }) {
   const { tripId } = useParams<{ tripId: string }>();
   const trip = useApi<TripDetail>(`/trips/${tripId}`);
   const members = useApi<TripMember[]>(`/trips/${tripId}/members`);
@@ -84,6 +85,7 @@ export default function TripDetailView() {
   }
 
   const detail = trip.data;
+  const canChat = isChatParticipant(currentUserId, detail.driver.user_id, members.data);
 
   return (
     <main className="page-shell stack">
@@ -120,9 +122,11 @@ export default function TripDetailView() {
         </div>
 
         <div className="actions">
-          <Link className="button secondary" href={`/chat/${tripId}`}>
-            Buka chat
-          </Link>
+          {canChat ? (
+            <Link className="button secondary" href={`/chat/${tripId}`}>
+              Buka chat
+            </Link>
+          ) : null}
           {isDriver
             ? NEXT_STATUSES[detail.status].map((next) => (
                 <button
@@ -138,6 +142,11 @@ export default function TripDetailView() {
             : null}
         </div>
         {actionError ? <ErrorNotice error={actionError} /> : null}
+        {!canChat && !members.loading ? (
+          <p className="muted">
+            Chat hanya tersedia untuk driver dan peserta yang sudah diterima.
+          </p>
+        ) : null}
       </section>
 
       {isDriver === false && detail.status === "published" ? (

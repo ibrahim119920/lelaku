@@ -7,6 +7,7 @@ import { type FormEvent, useEffect, useRef, useState } from "react";
 import { ErrorNotice } from "@/components/ui/error-notice";
 import { ApiError, apiFetch, jsonBody, toApiError } from "@/lib/api/client";
 import type { Message } from "@/lib/api/types";
+import { mergeMessages } from "@/lib/chat";
 import { formatDateTime } from "@/lib/format";
 
 const POLL_INTERVAL_MS = 4000;
@@ -23,11 +24,7 @@ export default function ChatView() {
 
   function merge(incoming: Message[]) {
     if (incoming.length === 0) return;
-    setMessages((prev) => {
-      const seen = new Set(prev.map((m) => m.message_id));
-      const fresh = incoming.filter((m) => !seen.has(m.message_id));
-      return fresh.length === 0 ? prev : [...prev, ...fresh];
-    });
+    setMessages((prev) => mergeMessages(prev, incoming));
     lastSentAt.current = incoming[incoming.length - 1].sent_at;
   }
 

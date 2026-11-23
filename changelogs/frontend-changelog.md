@@ -2,6 +2,12 @@
 
 Semua perubahan penting pada frontend (Next.js) dicatat di file ini.
 
+## [2026-11-23] Chat LL-13: tombol chat hanya untuk peserta
+
+**Jenis:** Perbaikan + test
+**Deskripsi:** Halaman detail trip sekarang menerima `currentUserId` dari server component, sehingga tombol "Buka chat" hanya tampil untuk driver atau passenger dengan status anggota `active`. Pengguna lain melihat keterangan bahwa chat hanya tersedia untuk peserta yang sudah diterima. Logika penggabungan pesan polling dipindahkan ke `lib/chat.ts` dan dipakai `ChatView`; ditambahkan unit test untuk dedup pesan, urutan, dan aturan akses peserta. Direct URL chat tetap dijaga backend (`403`).
+**File yang terdampak:** frontend/src/lib/chat.ts, frontend/src/features/chat/chat-view.tsx, frontend/src/features/trips/trip-detail-view.tsx, frontend/src/app/(main)/trips/[tripId]/page.tsx, frontend/tests/unit/chat.test.ts
+
 ## [2026-11-18] Integrasi halaman (main) dengan API trip, request, chat, dan rating
 
 **Jenis:** Fitur baru
