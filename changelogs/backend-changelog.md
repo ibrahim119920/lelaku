@@ -2,6 +2,12 @@
 
 Semua perubahan penting pada backend (FastAPI) dicatat di file ini.
 
+## [2026-11-23] Chat LL-13: validasi pesan dan akses peserta
+
+**Jenis:** Perbaikan + test
+**Deskripsi:** Pesan chat kini dipangkas spasi di awal/akhir sebelum disimpan; pesan kosong atau hanya berisi spasi ditolak `422`. Ditambahkan test untuk trimming, whitespace-only, batas 2000 karakter, dan akses tanpa sesi (`401`). Dokumentasi `message-api.md` diperjelas: polling 4 detik adalah mekanisme terpilih, akses `cancelled` berlaku untuk passenger (driver tetap peserta), dan aturan `content` mengikuti hasil trim. Seluruh test chat lulus.
+**File yang terdampak:** backend/app/chat/schemas.py, backend/tests/test_messages.py, integration-docs/message-api.md
+
 ## [2026-11-23] Perketat guard database test dan test regresi rating requester
 
 **Jenis:** Perbaikan + test

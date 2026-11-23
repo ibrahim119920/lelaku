@@ -2,7 +2,7 @@
 
 Konvensi umum (autentikasi, format waktu, format error) ada di [README.md](README.md).
 
-Chat per trip (FR-14). Hanya **peserta trip** yang bisa membaca dan mengirim pesan: driver trip dan passenger yang request-nya sudah di-accept (status anggota `active`). Pola akses **polling**, bukan WebSocket.
+Chat per trip (FR-14). Hanya **peserta trip** yang bisa membaca dan mengirim pesan: driver trip dan passenger yang request-nya sudah di-accept (status anggota `active`). Pola akses **polling** (interval 4 detik di frontend), bukan WebSocket.
 
 Objek **Message**:
 
@@ -41,7 +41,8 @@ Pakai nilai `sent_at` persis seperti yang dikembalikan server, dan URL-encode (t
 
 | Status | Kapan |
 | --- | --- |
-| 403 | User bukan peserta trip (bukan driver, belum di-accept, atau trip dibatalkan) |
+| 401 | Tidak ada sesi login yang valid |
+| 403 | User bukan peserta trip (bukan driver, belum di-accept, atau passenger pada trip yang dibatalkan) |
 | 404 | Trip tidak ditemukan |
 | 422 | `after` bukan datetime dengan offset, atau `limit` di luar rentang |
 
@@ -57,7 +58,7 @@ Kirim pesan. `sender_id` diambil dari token login.
 { "content": "Halo pak, saya sudah di gerbang" }
 ```
 
-`content` wajib, 1–2000 karakter.
+`content` wajib, 1–2000 karakter **setelah** spasi di awal/akhir dipangkas. Pesan yang hanya berisi spasi ditolak.
 
 **Response 201:** objek Message yang baru dibuat.
 
@@ -65,6 +66,7 @@ Kirim pesan. `sender_id` diambil dari token login.
 
 | Status | Kapan |
 | --- | --- |
+| 401 | Tidak ada sesi login yang valid |
 | 403 | User bukan peserta trip |
 | 404 | Trip tidak ditemukan |
-| 422 | `content` kosong atau lebih dari 2000 karakter |
+| 422 | `content` kosong, hanya spasi, atau lebih dari 2000 karakter |
