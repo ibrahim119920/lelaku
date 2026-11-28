@@ -21,6 +21,7 @@ from app.trip.models import (
 from app.trip.schemas import (
     DriverInfo,
     JoinedTripOut,
+    MyRideRequestOut,
     RatingCreate,
     RatingOut,
     ReceivedRatingOut,
@@ -225,6 +226,9 @@ async def update_trip_status(
         raise ConflictError(f"Transisi status dari '{trip.status.value}' ke '{new_status.value}' tidak diizinkan.")
 
     trip.status = new_status
+    if new_status in {TripStatus.ongoing, TripStatus.cancelled}:
+        # Request pending tidak bisa diproses lagi setelah trip berjalan atau batal.
+        await repo.cancel_pending_requests(session, trip.trip_id)
     if new_status == TripStatus.cancelled:
         await repo.cancel_trip_members(session, trip.trip_id)
     await session.commit()
@@ -237,7 +241,8 @@ async def update_trip_status(
 async def create_ride_request(
     session: AsyncSession, user_id: uuid.UUID, trip_id: uuid.UUID, data: RideRequestCreate
 ) -> RideRequestOut:
-    trip = await get_trip_or_404(session, trip_id)
+    # Kunci trip agar request tidak masuk bersamaan dengan trip dimulai/dibatalkan.
+    trip = await get_trip_or_404(session, trip_id, for_update=True)
     if trip.driver_id == user_id:
         raise ForbiddenError("Driver tidak bisa mengajukan request ke trip miliknya sendiri.")
     if trip.status != TripStatus.published:
@@ -283,6 +288,36 @@ async def list_ride_requests(
         )
         for ride_request, requester in await repo.list_requests_for_trip(session, trip_id, status)
     ]
+
+
+async def list_my_ride_requests(
+    session: AsyncSession, user_id: uuid.UUID, status: RideRequestStatus | None
+) -> list[MyRideRequestOut]:
+    return [
+        MyRideRequestOut(
+            **RideRequestOut.model_validate(ride_request).model_dump(),
+            trip=TripOut.from_model(trip),
+        )
+        for ride_request, trip in await repo.list_requests_by_requester(session, user_id, status)
+    ]
+
+
+async def cancel_ride_request(
+    session: AsyncSession, user_id: uuid.UUID, trip_id: uuid.UUID, request_id: uuid.UUID
+) -> RideRequestOut:
+    # Kunci trip lebih dulu agar urutan lock sama dengan accept/reject.
+    await get_trip_or_404(session, trip_id, for_update=True)
+    ride_request = await repo.get_request(session, trip_id, request_id, for_update=True)
+    if ride_request is None:
+        raise NotFoundError("Request tidak ditemukan di trip ini.")
+    if ride_request.requester_id != user_id:
+        raise ForbiddenError("Hanya pemilik request yang bisa membatalkan request.")
+    if ride_request.status != RideRequestStatus.pending.value:
+        raise ConflictError(f"Request tidak bisa dibatalkan (status: {ride_request.status}).")
+
+    ride_request.status = RideRequestStatus.cancelled.value
+    await session.commit()
+    return RideRequestOut.model_validate(ride_request)
 
 
 async def decide_ride_request(

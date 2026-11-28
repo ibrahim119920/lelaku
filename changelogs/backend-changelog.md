@@ -2,6 +2,12 @@
 
 Semua perubahan penting pada backend (FastAPI) dicatat di file ini.
 
+## [2026-11-28] Join Request LL-11: pembatalan dan daftar request passenger
+
+**Jenis:** Fitur baru + test
+**Deskripsi:** Menambahkan status `cancelled` pada `ride_requests`, endpoint `GET /trips/me/requests` untuk passenger melihat request miliknya, dan `DELETE /trips/{trip_id}/requests/{request_id}` untuk membatalkan request yang masih `pending`. Request `pending` otomatis menjadi `cancelled` saat trip berubah dari `published` ke `ongoing` atau `cancelled`. Pembatalan dan accept/reject memakai urutan lock trip lalu request agar tidak saling menimpa. Migration baru `0007_ride_request_cancelled`; delapan test join request ditambahkan. Seluruh 107 test backend lulus.
+**File yang terdampak:** backend/app/trip/models.py, backend/app/trip/schemas.py, backend/app/trip/repository.py, backend/app/trip/service.py, backend/app/trip/router.py, backend/alembic/versions/0007_ride_request_cancelled.py, backend/tests/test_riderequests.py, integration-docs/riderequest-api.md, docs/database-setup.md, backend/README.md
+
 ## [2026-11-23] Chat LL-13: validasi pesan dan akses peserta
 
 **Jenis:** Perbaikan + test

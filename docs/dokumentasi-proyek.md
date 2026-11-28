@@ -103,7 +103,7 @@ Alembic untuk migrasi. Kode disusun per domain di `backend/app/`:
 `auth/`, `trip/`, dan `chat/`, dengan `core/` untuk konfigurasi, database,
 security, dependency, dan exception. Seluruh primary key dan foreign key
 memakai `uuid`. Rantai migrasi berada di `backend/alembic/versions/`
-(`0001`–`0006`) dan dijalankan dari folder `backend/`.
+(`0001`–`0007`) dan dijalankan dari folder `backend/`.
 
 ~~~mermaid
 flowchart LR

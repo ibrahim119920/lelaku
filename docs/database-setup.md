@@ -90,7 +90,7 @@ pytest
 
 ## Schema
 
-Rantai migrasi berada di `backend/alembic/versions/` dengan revisi `0001`–`0006`:
+Rantai migrasi berada di `backend/alembic/versions/` dengan revisi `0001`–`0007`:
 
 | Revisi | Isi |
 | --- | --- |
@@ -100,6 +100,7 @@ Rantai migrasi berada di `backend/alembic/versions/` dengan revisi `0001`–`000
 | `0004_message` | Tabel `messages`. |
 | `0005_rating` | Tabel `ratings`. |
 | `0006_auth_identity` | Auth LL-05 di atas skema UUID: `identity_status`, email unik per `lower(email)`, sesi berkunci hash token, foreign key `ON DELETE CASCADE`. |
+| `0007_ride_request_cancelled` | Status `cancelled` pada `ride_requests` untuk pembatalan request oleh passenger. |
 
 Total 10 tabel: `users`, `driver_profiles`, `user_sessions`, `vehicles`,
 `trips`, `trip_matches`, `ride_requests`, `trip_members`, `messages`, `ratings`.

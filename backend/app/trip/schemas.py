@@ -130,6 +130,10 @@ class RideRequestWithRequesterOut(RideRequestOut):
     requester: RequesterInfo
 
 
+class MyRideRequestOut(RideRequestOut):
+    trip: TripOut
+
+
 # ---------- Tripmember ----------
 
 

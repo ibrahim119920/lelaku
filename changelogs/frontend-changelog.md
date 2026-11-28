@@ -2,6 +2,12 @@
 
 Semua perubahan penting pada frontend (Next.js) dicatat di file ini.
 
+## [2026-11-28] Join Request LL-11: daftar dan pembatalan request passenger
+
+**Jenis:** Fitur baru
+**Deskripsi:** Halaman `/requests` kini menampilkan bagian “Permintaan saya” dari `GET /trips/me/requests`, lengkap dengan status `pending`/`accepted`/`rejected`/`cancelled` dan tombol Batalkan untuk request yang masih `pending`. Setelah request dikirim dari detail trip, pengguna diarahkan ke halaman ini untuk melihat status atau membatalkan. Tipe `RideRequestStatus` dan label status diperluas dengan `cancelled`. Frontend test, type-check, dan production build lulus.
+**File yang terdampak:** frontend/src/lib/api/types.ts, frontend/src/lib/format.ts, frontend/src/features/join-requests/requests-view.tsx, frontend/src/features/trips/trip-detail-view.tsx
+
 ## [2026-11-23] Chat LL-13: tombol chat hanya untuk peserta
 
 **Jenis:** Perbaikan + test

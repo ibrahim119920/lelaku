@@ -1,7 +1,7 @@
 // Tipe response backend. Kontrak lengkap: integration-docs/*.md
 
 export type TripStatus = "published" | "ongoing" | "completed" | "cancelled";
-export type RideRequestStatus = "pending" | "accepted" | "rejected";
+export type RideRequestStatus = "pending" | "accepted" | "rejected" | "cancelled";
 export type RatingRoleContext = "driver_to_passenger" | "passenger_to_driver";
 
 export type LatLng = { lat: number; lng: number };
@@ -74,6 +74,10 @@ export type RideRequestWithRequester = RideRequest & {
     avg_rating: number;
     total_ratings: number;
   };
+};
+
+export type MyRideRequest = RideRequest & {
+  trip: Trip;
 };
 
 export type Message = {
