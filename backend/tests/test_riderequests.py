@@ -150,3 +150,139 @@ async def test_cancel_trip_cancels_members(client):
     joined = (await client.get("/trips/me/joined", headers=auth(passenger))).json()
     assert joined[0]["member_status"] == "cancelled"
     assert joined[0]["status"] == "cancelled"
+
+
+async def test_my_requests_only_own_and_can_filter(client):
+    _, trip = await _setup(client)
+    _, other_trip = await _setup(client)
+    passenger = await make_user("Sari")
+    other = await make_user("Budi")
+    own = (await _request(client, trip["trip_id"], passenger)).json()
+    await _request(client, other_trip["trip_id"], other)
+
+    resp = await client.get("/trips/me/requests", headers=auth(passenger))
+    assert resp.status_code == 200
+    rows = resp.json()
+    assert [row["request_id"] for row in rows] == [own["request_id"]]
+    assert rows[0]["trip"]["trip_id"] == trip["trip_id"]
+
+    pending = await client.get(
+        "/trips/me/requests", params={"status": "pending"}, headers=auth(passenger)
+    )
+    assert [row["request_id"] for row in pending.json()] == [own["request_id"]]
+    accepted = await client.get(
+        "/trips/me/requests", params={"status": "accepted"}, headers=auth(passenger)
+    )
+    assert accepted.json() == []
+
+
+async def test_cancel_own_pending_request_and_request_again(client):
+    _, trip = await _setup(client)
+    passenger = await make_user("Sari")
+    req = (await _request(client, trip["trip_id"], passenger)).json()
+
+    resp = await client.delete(
+        f"/trips/{trip['trip_id']}/requests/{req['request_id']}", headers=auth(passenger)
+    )
+    assert resp.status_code == 200
+    assert resp.json()["status"] == "cancelled"
+
+    mine = await client.get("/trips/me/requests", headers=auth(passenger))
+    assert mine.json()[0]["status"] == "cancelled"
+
+    assert (await _request(client, trip["trip_id"], passenger)).status_code == 201
+
+
+async def test_cancel_other_user_request_forbidden(client):
+    _, trip = await _setup(client)
+    passenger = await make_user("Sari")
+    other = await make_user("Budi")
+    req = (await _request(client, trip["trip_id"], passenger)).json()
+
+    resp = await client.delete(
+        f"/trips/{trip['trip_id']}/requests/{req['request_id']}", headers=auth(other)
+    )
+    assert resp.status_code == 403
+
+    mine = await client.get("/trips/me/requests", headers=auth(passenger))
+    assert mine.json()[0]["status"] == "pending"
+
+
+async def test_cancel_processed_request_conflict(client):
+    driver, trip = await _setup(client, seats=2)
+    accepted = await make_user("Sari")
+    rejected = await make_user("Budi")
+    accepted_req = (await _request(client, trip["trip_id"], accepted)).json()
+    rejected_req = (await _request(client, trip["trip_id"], rejected)).json()
+
+    await client.patch(
+        f"/trips/{trip['trip_id']}/requests/{accepted_req['request_id']}",
+        json={"status": "accepted"},
+        headers=auth(driver),
+    )
+    await client.patch(
+        f"/trips/{trip['trip_id']}/requests/{rejected_req['request_id']}",
+        json={"status": "rejected"},
+        headers=auth(driver),
+    )
+
+    for passenger, req in ((accepted, accepted_req), (rejected, rejected_req)):
+        resp = await client.delete(
+            f"/trips/{trip['trip_id']}/requests/{req['request_id']}", headers=auth(passenger)
+        )
+        assert resp.status_code == 409
+
+
+async def test_start_trip_cancels_pending_requests(client):
+    driver, trip = await _setup(client)
+    passenger = await make_user()
+    await _request(client, trip["trip_id"], passenger)
+
+    await client.patch(
+        f"/trips/{trip['trip_id']}/status", json={"status": "ongoing"}, headers=auth(driver)
+    )
+
+    mine = await client.get("/trips/me/requests", headers=auth(passenger))
+    assert mine.json()[0]["status"] == "cancelled"
+
+
+async def test_cancel_trip_cancels_pending_requests(client):
+    driver, trip = await _setup(client)
+    passenger = await make_user()
+    await _request(client, trip["trip_id"], passenger)
+
+    await client.patch(
+        f"/trips/{trip['trip_id']}/status", json={"status": "cancelled"}, headers=auth(driver)
+    )
+
+    mine = await client.get("/trips/me/requests", headers=auth(passenger))
+    assert mine.json()[0]["status"] == "cancelled"
+
+
+async def test_cancel_missing_request_is_404(client):
+    _, trip = await _setup(client)
+    passenger = await make_user()
+
+    resp = await client.delete(
+        f"/trips/{trip['trip_id']}/requests/{uuid.uuid4()}", headers=auth(passenger)
+    )
+    assert resp.status_code == 404
+
+
+async def test_concurrent_accept_and_cancel_do_not_double_process(client):
+    driver, trip = await _setup(client, seats=1)
+    passenger = await make_user()
+    req = (await _request(client, trip["trip_id"], passenger)).json()
+    url = f"/trips/{trip['trip_id']}/requests/{req['request_id']}"
+
+    responses = await asyncio.gather(
+        client.patch(url, json={"status": "accepted"}, headers=auth(driver)),
+        client.delete(url, headers=auth(passenger)),
+    )
+    assert sorted(response.status_code for response in responses) == [200, 409]
+
+    mine = await client.get("/trips/me/requests", headers=auth(passenger))
+    final_status = mine.json()[0]["status"]
+    assert final_status in {"accepted", "cancelled"}
+    detail = (await client.get(f"/trips/{trip['trip_id']}", headers=auth(driver))).json()
+    assert detail["available_seats"] == (0 if final_status == "accepted" else 1)

@@ -57,6 +57,6 @@ Auth memakai **sesi server-side**: login mengirim cookie `lelaku_session` (HttpO
 
 - `app/auth/deps.py::get_current_user` adalah satu-satunya tempat sesi divalidasi; modul trip/chat memakai `CurrentUserId` (`app/core/deps.py`).
 - Set `APP_ENV=development` di `.env` untuk dev lokal. Selain itu cookie memakai flag `Secure` dan butuh HTTPS.
-- Jalankan `alembic upgrade head` (sampai `0006_auth_identity`). Test memakai `create_all`, jadi migration perlu dicoba terpisah di database kosong.
+- Jalankan `alembic upgrade head` (sampai `0007_ride_request_cancelled`). Test memakai `create_all`, jadi migration perlu dicoba terpisah di database kosong.
 - `Vehicle` masih placeholder (belum ada modul/endpoint kendaraan).
 - Belum ada: rate limiting login, pembersihan sesi kedaluwarsa, upload dokumen identitas (FR-03).

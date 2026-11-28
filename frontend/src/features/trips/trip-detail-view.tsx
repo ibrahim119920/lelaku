@@ -225,7 +225,11 @@ function JoinForm({ tripId }: { tripId: string }) {
       <h2>Ajukan untuk bergabung</h2>
       {sent ? (
         <p className="form-status success">
-          Permintaan terkirim. Tunggu persetujuan driver, lalu chat akan terbuka.
+          Permintaan terkirim. Lihat status atau batalkan di{" "}
+          <Link className="text-link" href="/requests">
+            Permintaan saya
+          </Link>
+          .
         </p>
       ) : (
         <form className="form-grid" onSubmit={submit}>

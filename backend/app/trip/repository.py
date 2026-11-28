@@ -142,6 +142,31 @@ async def list_requests_for_trip(
     return [tuple(row) for row in await session.execute(stmt)]
 
 
+async def list_requests_by_requester(
+    session: AsyncSession, requester_id: uuid.UUID, status: RideRequestStatus | None = None
+) -> list[tuple[RideRequest, Trip]]:
+    stmt = (
+        select(RideRequest, Trip)
+        .join(Trip, Trip.trip_id == RideRequest.trip_id)
+        .where(RideRequest.requester_id == requester_id)
+        .order_by(RideRequest.created_at.desc())
+    )
+    if status is not None:
+        stmt = stmt.where(RideRequest.status == status.value)
+    return [tuple(row) for row in await session.execute(stmt)]
+
+
+async def cancel_pending_requests(session: AsyncSession, trip_id: uuid.UUID) -> None:
+    await session.execute(
+        update(RideRequest)
+        .where(
+            RideRequest.trip_id == trip_id,
+            RideRequest.status == RideRequestStatus.pending.value,
+        )
+        .values(status=RideRequestStatus.cancelled.value)
+    )
+
+
 def add(session: AsyncSession, obj: object) -> None:
     session.add(obj)
 

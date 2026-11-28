@@ -86,13 +86,16 @@ class RideRequestStatus(str, enum.Enum):
     pending = "pending"
     accepted = "accepted"
     rejected = "rejected"
+    cancelled = "cancelled"
 
 
 class RideRequest(Base):
     __tablename__ = "ride_requests"
     __table_args__ = (
-        CheckConstraint("status IN ('pending', 'accepted', 'rejected')", name="status_valid"),
-        # Satu request aktif (pending/accepted) per passenger per trip; boleh request ulang setelah rejected.
+        CheckConstraint(
+            "status IN ('pending', 'accepted', 'rejected', 'cancelled')", name="status_valid"
+        ),
+        # Satu request aktif (pending/accepted) per passenger per trip; boleh request ulang setelah rejected/cancelled.
         Index(
             "uq_ride_requests_active_per_requester",
             "trip_id",

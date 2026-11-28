@@ -28,4 +28,5 @@ export const REQUEST_STATUS_LABEL = {
   pending: "Menunggu",
   accepted: "Diterima",
   rejected: "Ditolak",
+  cancelled: "Dibatalkan",
 } as const;

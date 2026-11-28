@@ -8,6 +8,7 @@ from app.trip import service
 from app.trip.models import RatingRoleContext, RideRequestStatus, TripStatus
 from app.trip.schemas import (
     JoinedTripOut,
+    MyRideRequestOut,
     RatingCreate,
     RatingOut,
     ReceivedRatingOut,
@@ -76,6 +77,15 @@ async def my_joined_trips(session: DbSession, user_id: CurrentUserId):
     return await service.list_my_joined_trips(session, user_id)
 
 
+@trips_router.get("/me/requests", response_model=list[MyRideRequestOut])
+async def my_ride_requests(
+    session: DbSession,
+    user_id: CurrentUserId,
+    request_status: RideRequestStatus | None = Query(None, alias="status"),
+):
+    return await service.list_my_ride_requests(session, user_id, request_status)
+
+
 @trips_router.get("/{trip_id}", response_model=TripDetailOut)
 async def get_trip(trip_id: uuid.UUID, session: DbSession, _: CurrentUserId):
     return await service.get_trip_detail(session, trip_id)
@@ -121,6 +131,16 @@ async def decide_ride_request(
     return await service.decide_ride_request(
         session, user_id, trip_id, request_id, RideRequestStatus(data.status)
     )
+
+
+@trips_router.delete("/{trip_id}/requests/{request_id}", response_model=RideRequestOut)
+async def cancel_ride_request(
+    trip_id: uuid.UUID,
+    request_id: uuid.UUID,
+    session: DbSession,
+    user_id: CurrentUserId,
+):
+    return await service.cancel_ride_request(session, user_id, trip_id, request_id)
 
 
 # ---------- Tripmember ----------
